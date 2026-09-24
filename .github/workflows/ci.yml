@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Roblox tooling
+        run: |
+          mkdir -p "$HOME/tools" && cd "$HOME/tools"
+          curl -fsSL -o rojo.zip https://github.com/rojo-rbx/rojo/releases/download/v7.5.1/rojo-7.5.1-linux-x86_64.zip
+          curl -fsSL -o selene.zip https://github.com/Kampfkarren/selene/releases/download/0.29.0/selene-0.29.0-linux.zip
+          curl -fsSL -o stylua.zip https://github.com/JohnnyMorganz/StyLua/releases/download/v2.1.0/stylua-linux-x86_64.zip
+          curl -fsSL -o luau.zip https://github.com/luau-lang/luau/releases/latest/download/luau-ubuntu.zip
+          curl -fsSL -o luau-lsp.zip https://github.com/JohnnyMorganz/luau-lsp/releases/latest/download/luau-lsp-linux-x86_64.zip
+          curl -fsSL -o globalTypes.d.luau https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau
+          for archive in *.zip; do unzip -o -q "$archive"; done
+          chmod +x rojo selene stylua luau luau-lsp
+          echo "$HOME/tools" >> "$GITHUB_PATH"
+
+      - name: Format
+        run: stylua --check src tests
+
+      - name: Lint
+        run: selene src
+
+      - name: Type check
+        run: |
+          rojo sourcemap default.project.json -o sourcemap.json
+          luau-lsp analyze --sourcemap=sourcemap.json --definitions="$HOME/tools/globalTypes.d.luau" --platform=roblox src/
+
+      - name: Unit tests
+        run: python3 tests/run.py luau
+
+      - name: Build place
+        run: rojo build default.project.json -o TapAndHatch.rbxlx
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TapAndHatch-place
+          path: TapAndHatch.rbxlx

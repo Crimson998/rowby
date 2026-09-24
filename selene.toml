@@ -1,0 +1,5 @@
+std = "roblox"
+
+[lints]
+# Services are fetched once at the top of each module and not every module uses every one.
+unused_variable = "warn"
