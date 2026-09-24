@@ -663,46 +663,56 @@ local function spawnOrb(zoneIndex: number)
 			break
 		end
 	end
-	local isGem = orbRng:NextNumber() < Config.Orbs.GemChance
+	local lucky = orbRng:NextNumber() < Config.Orbs.LuckyChance
 	local orb = Instance.new("Part")
-	orb.Name = if isGem then "GemOrb" else "CoinOrb"
+	orb.Name = if lucky then "LuckyClover" else "Clover"
+	orb.Shape = Enum.PartType.Ball
 	orb.Anchored = true
 	orb.CanCollide = false
 	orb.CanQuery = false
 	orb.CanTouch = false
 	orb.CastShadow = false
 	orb.Material = Enum.Material.Neon
-	if isGem then
-		orb.Size = Vector3.one * 1.4
-		orb.Color = rgb(80, 230, 255)
-		orb.CFrame = CFrame.new(position) * CFrame.Angles(math.pi / 4, 0, math.pi / 4)
-	else
-		orb.Shape = Enum.PartType.Ball
-		orb.Size = Vector3.one * 1.8
-		orb.Color = rgb(255, 205, 50)
-		orb.CFrame = CFrame.new(position)
+	orb.Size = Vector3.one * (if lucky then 1.4 else 1)
+	orb.Color = if lucky then rgb(255, 215, 60) else rgb(60, 220, 90)
+	orb.Transparency = 0.3
+	orb.CFrame = CFrame.new(position)
+
+	local icon = Instance.new("BillboardGui")
+	icon.Size = UDim2.fromScale(if lucky then 4 else 2.8, if lucky then 4 else 2.8)
+	icon.MaxDistance = 120
+	icon.LightInfluence = 0
+	icon.Parent = orb
+	textLabel({ Size = UDim2.fromScale(1, 1), Text = "🍀", TextStrokeTransparency = 1, Parent = icon })
+	if lucky then
+		local sparkles = Instance.new("Sparkles")
+		sparkles.SparkleColor = rgb(255, 230, 90)
+		sparkles.Parent = orb
 	end
+
 	orb:SetAttribute("Zone", zoneIndex)
 	orb.Parent = orbFolder
-	orbs[zoneIndex][orb] = if isGem then "Gem" else "Coin"
+	orbs[zoneIndex][orb] = if lucky then "LuckyClover" else "Clover"
 end
 
+-- Clovers give Luck XP (never coins; coins come only from tapping).
 local function collectOrb(profile, orb: BasePart, kind: string, zoneIndex: number)
 	orbs[zoneIndex][orb] = nil
 	local position = orb.Position
 	orb:Destroy()
 
-	local amount
-	if kind == "Gem" then
-		amount = orbRng:NextInteger(Config.Orbs.GemAmount[1], Config.Orbs.GemAmount[2])
-		DataService.addGems(profile, amount)
-	else
-		amount = Formula.orbValue(profile.Data, profile.Session, zoneIndex)
-		DataService.addCoins(profile, amount, true)
-	end
-	profile.Data.Stats.OrbsCollected += 1
-	DataService.change(profile, "Stats")
+	local data = profile.Data
+	local amount = Formula.cloverValue(zoneIndex, kind == "LuckyClover")
+	local levelBefore = Formula.luckLevel(data.LuckXP)
+	data.LuckXP += amount
+	data.Stats.OrbsCollected += 1
+	DataService.change(profile, "LuckXP", "Stats")
 	Net.event("OrbCollected"):FireClient(profile.Player, position, kind, amount)
+
+	local levelAfter = Formula.luckLevel(data.LuckXP)
+	if levelAfter > levelBefore then
+		Net.event("Effect"):FireClient(profile.Player, "LuckLevel", levelAfter)
+	end
 
 	task.delay(Config.Orbs.RespawnSeconds, spawnOrb, zoneIndex)
 end

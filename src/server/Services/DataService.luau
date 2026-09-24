@@ -37,6 +37,8 @@ local TEMPLATE = {
 	Gems = 0,
 	Rebirths = 0,
 	HighestZone = 1,
+	-- Lifetime Luck XP from clovers; sets the Luck level.
+	LuckXP = 0,
 	Upgrades = {
 		TapPower = 0,
 		Magnet = 0,

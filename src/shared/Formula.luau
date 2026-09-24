@@ -106,9 +106,27 @@ function Formula.baseTapValue(data, session): number
 	return Formula.tapPower(Formula.level(data, "TapPower")) * Formula.coinMultiplier(data, session, false)
 end
 
-function Formula.orbValue(data, session, zoneIndex: number): number
+-- Luck XP from one clover in an area.
+function Formula.cloverValue(zoneIndex: number, lucky: boolean): number
 	local zone = Zones.List[zoneIndex] or Zones.List[1]
-	return Formula.tapValue(data, session) * zone.OrbValue
+	return zone.CloverValue * (if lucky then Config.Orbs.LuckyMultiplier else 1)
+end
+
+-- Total Luck XP needed to reach a Luck level.
+function Formula.luckXPForLevel(level: number): number
+	return math.ceil(Config.Luck.BaseXP * level ^ Config.Luck.Exponent)
+end
+
+function Formula.luckLevel(xp: number): number
+	local level = math.floor((math.max(xp, 0) / Config.Luck.BaseXP) ^ (1 / Config.Luck.Exponent))
+	-- Correct for floating point at exact boundaries.
+	while level > 0 and Formula.luckXPForLevel(level) > xp do
+		level -= 1
+	end
+	while level < Config.Luck.MaxLevel and Formula.luckXPForLevel(level + 1) <= xp do
+		level += 1
+	end
+	return math.min(level, Config.Luck.MaxLevel)
 end
 
 -- Coins equal to `seconds` of tapping at the estimated tap rate.
@@ -135,15 +153,34 @@ function Formula.petCount(data): number
 	return count
 end
 
+export type LuckBreakdown = {
+	Level: number,
+	FromLevel: number,
+	FromUpgrade: number,
+	FromPass: number,
+	BoostMultiplier: number,
+	Total: number,
+}
+
+-- Where the player's luck comes from. Luck multiplies the weight of Rare-and-better pets.
+function Formula.luckBreakdown(data, session): LuckBreakdown
+	local level = Formula.luckLevel(data.LuckXP or 0)
+	local fromLevel = level * Config.Luck.PerLevel
+	local fromUpgrade = Formula.level(data, "Luck") * 0.1
+	local fromPass = if session.Passes.Lucky then Config.Bonuses.LuckyPassLuck else 0
+	local boost = if (data.Boosts.Luck or 0) > 0 then Config.Bonuses.LuckBoostMultiplier else 1
+	return {
+		Level = level,
+		FromLevel = fromLevel,
+		FromUpgrade = fromUpgrade,
+		FromPass = fromPass,
+		BoostMultiplier = boost,
+		Total = (1 + fromLevel + fromUpgrade + fromPass) * boost,
+	}
+end
+
 function Formula.luck(data, session): number
-	local luck = 1 + Formula.level(data, "Luck") * 0.1
-	if session.Passes.Lucky then
-		luck += Config.Bonuses.LuckyPassLuck
-	end
-	if (data.Boosts.Luck or 0) > 0 then
-		luck *= Config.Bonuses.LuckBoostMultiplier
-	end
-	return luck
+	return Formula.luckBreakdown(data, session).Total
 end
 
 export type Odds = { { Id: string, Chance: number } }

@@ -35,6 +35,7 @@ local MENU = {
 	{ Window = "Quests", Icon = "📜", Color = Theme.Colors.Purple },
 	{ Window = "Daily", Icon = "📅", Color = Theme.Colors.Red },
 	{ Window = "Gifts", Icon = "🎁", Color = Theme.Colors.Gold },
+	{ Window = "Stats", Icon = "📊", Color = Theme.Colors.Luck },
 	{ Window = "Codes", Icon = "🎫", Color = Theme.Colors.Gray },
 }
 
@@ -42,7 +43,7 @@ local function buildCurrencies(screen: ScreenGui, openShop: (string) -> ())
 	local panel = Util.new("Frame", {
 		Name = "Currencies",
 		Position = UDim2.fromOffset(12, 12),
-		Size = UDim2.fromOffset(240, 150),
+		Size = UDim2.fromOffset(240, 210),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	}, { Util.list(Enum.FillDirection.Vertical, 8) })
@@ -84,6 +85,46 @@ local function buildCurrencies(screen: ScreenGui, openShop: (string) -> ())
 	local gems = pill(2, "💎", Theme.Colors.Gems, "Gems")
 	local rebirths = pill(3, "🔁", Theme.Colors.Rebirth, nil)
 
+	-- Luck: level from clovers, total luck multiplier and progress to the next level.
+	local luckButton = Util.button({
+		LayoutOrder = 4,
+		Color = Theme.Colors.Panel,
+		CornerRadius = 22,
+		Size = UDim2.fromOffset(240, 50),
+		Parent = panel,
+	}, function()
+		Windows.open("Stats")
+	end)
+	Util.label({
+		Size = UDim2.fromOffset(34, 30),
+		Position = UDim2.fromOffset(2, 2),
+		Text = "🍀",
+		Parent = luckButton,
+	})
+	local luckText = Util.label({
+		Size = UDim2.new(1, -44, 0, 26),
+		Position = UDim2.fromOffset(40, 2),
+		Text = "",
+		TextColor3 = Theme.Colors.Luck,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = luckButton,
+	})
+	local _, setLuckBar = Util.bar({
+		Size = UDim2.new(1, -12, 0, 10),
+		Position = UDim2.fromOffset(6, 32),
+		Color = Theme.Colors.Luck,
+		CornerRadius = 5,
+		Parent = luckButton,
+	})
+	State.watch({ "LuckXP", "Upgrades", "Boosts", "Session.Passes" }, function()
+		local xp = State.Data.LuckXP or 0
+		local level = Formula.luckLevel(xp)
+		local current = Formula.luckXPForLevel(level)
+		local nextXP = Formula.luckXPForLevel(level + 1)
+		luckText.Text = "Luck Lv " .. level .. "  ·  " .. Format.multiplier(Formula.luck(State.Data, State.Session))
+		setLuckBar((xp - current) / math.max(nextXP - current, 1))
+	end)
+
 	State.watch({ "Coins", "Gems", "Rebirths" }, function()
 		local data = State.Data
 		coins.Text = Format.number(data.Coins)
@@ -97,8 +138,8 @@ local function buildMenu(screen: ScreenGui)
 	local menu = Util.new("Frame", {
 		Name = "Menu",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, 30),
-		Size = UDim2.fromOffset(152, 320),
+		Position = UDim2.new(0, 12, 0.5, 70),
+		Size = UDim2.fromOffset(230, 230),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	}, {

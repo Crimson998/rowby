@@ -81,6 +81,7 @@ ShopWindow.build()
 require(UI.QuestsWindow).build()
 require(UI.DailyWindow).build()
 require(UI.GiftsWindow).build()
+require(UI.StatsWindow).build()
 require(UI.CodesWindow).build()
 
 local Input = require(Controllers.Input)

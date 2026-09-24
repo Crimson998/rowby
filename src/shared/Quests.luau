@@ -34,8 +34,8 @@ local Templates: { Template } = {
 	},
 	{
 		Stat = "OrbsCollected",
-		Text = "Collect %s orbs",
-		Icon = "✨",
+		Text = "Pick up %s clovers",
+		Icon = "🍀",
 		Gems = 10,
 		Goal = function(data)
 			return 20 + 5 * math.min(data.QuestsCompleted, 20)

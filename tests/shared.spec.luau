@@ -280,6 +280,42 @@ test("quests start with sensible goals", function()
 	end
 end)
 
+test("luck levels come from clover XP and stack with other luck", function()
+	eq(Formula.luckLevel(0), 0, "no XP")
+	local previous = 0
+	for level = 1, Config.Luck.MaxLevel do
+		local needed = Formula.luckXPForLevel(level)
+		assert(needed > previous, "XP needed grows at level " .. level)
+		eq(Formula.luckLevel(needed), level, "exactly enough XP for level " .. level)
+		eq(Formula.luckLevel(needed - 1), level - 1, "one XP short of level " .. level)
+		previous = needed
+	end
+	eq(Formula.luckLevel(1e12), Config.Luck.MaxLevel, "level is capped")
+
+	local data = freshData()
+	local session = freshSession()
+	data.LuckXP = Formula.luckXPForLevel(10)
+	near(Formula.luck(data, session), 1 + 10 * Config.Luck.PerLevel, 1e-9, "luck from level")
+	data.Upgrades.Luck = 2
+	session.Passes.Lucky = true
+	data.Boosts.Luck = 5
+	local breakdown = Formula.luckBreakdown(data, session)
+	eq(breakdown.Level, 10, "breakdown level")
+	near(breakdown.Total, (1 + 10 * Config.Luck.PerLevel + 0.2 + 0.25) * 2, 1e-9, "stacked luck")
+end)
+
+test("clovers give luck XP that grows by area, never coins", function()
+	for index, zone in Zones.List do
+		assert(zone.CloverValue > 0, "area " .. index .. " clover value")
+		if index > 1 then
+			assert(zone.CloverValue >= Zones.List[index - 1].CloverValue, "area " .. index .. " clovers get better")
+		end
+		eq(Formula.cloverValue(index, false), zone.CloverValue, "normal clover")
+		eq(Formula.cloverValue(index, true), zone.CloverValue * Config.Orbs.LuckyMultiplier, "lucky clover")
+	end
+	eq((Formula :: any).orbValue, nil, "orbs no longer pay coins")
+end)
+
 -- Daily streak ---------------------------------------------------------------------------------
 
 test("daily rewards advance, wrap after a week and reset after a missed day", function()

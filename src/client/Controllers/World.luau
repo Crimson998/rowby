@@ -3,7 +3,7 @@
 	- odds boards over every egg (computed with *your* luck, so they're always exact)
 	- gates vanish for areas you own, and only the next area's gate can be bought
 	- lighting and atmosphere blend as you walk between areas
-	- orbs bob and spin; collected orbs fly into you with a "+coins" popup
+	- clovers bob and spin; collected clovers fly into you with a "+🍀 Luck XP" popup
 	- a guide beam points new players to the first egg and anyone to a gate they can afford
 ]]
 
@@ -223,7 +223,8 @@ end
 function World.orbCollected(position: Vector3, kind: string, amount: number)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local color = if kind == "Gem" then Theme.Colors.Gems else Theme.Colors.Coins
+	local lucky = kind == "LuckyClover"
+	local color = if lucky then Theme.Colors.Gold else Theme.Colors.Luck
 
 	local spark = Instance.new("Part")
 	spark.Shape = Enum.PartType.Ball
@@ -267,7 +268,7 @@ function World.orbCollected(position: Vector3, kind: string, amount: number)
 	})
 	local text = Util.label({
 		Size = UDim2.fromScale(1, 1),
-		Text = (if kind == "Gem" then "+💎 " else "+🪙 ") .. Format.number(amount),
+		Text = "+🍀 " .. Format.number(amount) .. (if lucky then " LUCKY!" else ""),
 		TextColor3 = color,
 		Parent = popup,
 	})
@@ -276,7 +277,7 @@ function World.orbCollected(position: Vector3, kind: string, amount: number)
 	task.delay(0.8, function()
 		anchor:Destroy()
 	end)
-	Sound.play("Coin", if kind == "Gem" then 1.5 else 1 + math.random() * 0.2, 0.3)
+	Sound.play("Coin", if lucky then 1.5 else 1.2 + math.random() * 0.2, 0.3)
 end
 
 -- Guide beam -------------------------------------------------------------------------------
@@ -361,7 +362,15 @@ end
 
 function World.effect(name: string, ...: any)
 	local args = { ... }
-	if name == "Rebirth" then
+	if name == "LuckLevel" then
+		local level = args[1]
+		Notifications.banner(
+			"🍀 Luck Level " .. level .. "!  Luck " .. Format.multiplier(Formula.luck(State.Data, State.Session)),
+			Theme.Colors.Luck,
+			2.5
+		)
+		Sound.play("Reveal", 1.4, 0.6)
+	elseif name == "Rebirth" then
 		local rebirths, gems = args[1], args[2]
 		Notifications.banner(
 			"🔁 REBIRTH! Coins "
@@ -387,7 +396,7 @@ function World.start()
 	end
 	CollectionService:GetInstanceAddedSignal("EggStand"):Connect(buildEggBoard)
 	CollectionService:GetInstanceAddedSignal("ZoneGate"):Connect(refreshGates)
-	State.watch({ "Upgrades", "Boosts", "HighestZone", "Session.Passes" }, refreshEggBoards)
+	State.watch({ "Upgrades", "Boosts", "HighestZone", "LuckXP", "Session.Passes" }, refreshEggBoards)
 	State.watch({ "HighestZone" }, function()
 		lastLuck = -1
 		refreshEggBoards()

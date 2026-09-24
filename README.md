@@ -1,7 +1,7 @@
 # 🥚 Tap & Hatch 🐾
 
-A Roblox pet simulator: tap for coins, hatch eggs for pets that multiply your coins, unlock
-new areas, rebirth for permanent boosts, and do it again. The Robux shop sells small, fairly
+A Roblox pet simulator: tap for coins, pick up clovers to level your luck, hatch eggs for pets
+that multiply your coins, unlock new areas, rebirth for permanent boosts, and do it again. The Robux shop sells small, fairly
 priced items.
 
 The whole game is code: the map, UI and pet models are all built from scripts, so the repo has
@@ -63,12 +63,14 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 
 | Loop | Hook |
 | --- | --- |
-| Tap → coins → upgrades | Numbers climb every second; cheap early upgrades |
+| Tap → coins → upgrades | Tapping is the only way to earn coins; numbers climb every second and early upgrades are cheap |
+| Clovers → Luck level | 🍀 clovers on the ground give Luck XP (more in later areas, 10× for golden Lucky Clovers). Every Luck level adds +2% luck, forever |
 | Eggs → pets | Rarity reveals, a NEW! badge, a gem bonus for every new pet, server-wide shout-outs for Legendary and up |
 | Pet Index | A collection book with silhouettes of pets you haven't found yet |
 | Golden pets | Combine 5 copies into a pet with 3× power |
 | Areas | Five themed areas, each with a new egg and a bigger multiplier |
 | Rebirth | Trade coins for a permanent multiplier plus gems |
+| Stats | The 📊 window (or the luck meter under your coins) breaks down your luck and coins per tap, plus lifetime totals |
 | Goal tracker | Always shows the next target with a progress bar; a guide beam points to it once you can afford it |
 | Daily streak | A 7-day reward cycle that grows each day |
 | Playtime gifts | 8 gifts per session, then the round restarts |
@@ -79,6 +81,20 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 Pacing (from an economy simulation run while tuning, active player, no purchases): second area in
 ~3 min, third in ~20 min, first rebirth around 20 min, fourth area in ~1.5–2 h, fifth as a
 multi-session goal.
+
+### How luck works
+
+Luck multiplies the drop weight of Rare-and-better pets, and the odds shown on every egg
+already include it. It adds up from four sources:
+
+```
+luck = (1 + Luck level × 2% + Egg Luck upgrade × 10% + Lucky Eggs pass 25%) × 2 if a 2x Luck boost is active
+```
+
+Reaching Luck level L takes `20 × L^1.6` Luck XP in total, so level 10 is about 800 clovers'
+worth and level 50 about 10,400 (max level 200). Clovers give 1 Luck XP in the Meadow up to 5 in
+the Cosmic Void. Luck is never reset by rebirth. Tune it in `Config.Luck`, `Config.Orbs` and each
+area's `CloverValue`.
 
 ## Using your own pet and egg models
 
@@ -117,7 +133,7 @@ give it a model the same way.
 
 All the numbers live in data modules, so balancing never means touching gameplay code:
 
-- [`Config.luau`](src/shared/Config.luau): rebirth curve, orbs, bonuses, daily rewards, gifts,
+- [`Config.luau`](src/shared/Config.luau): rebirth curve, clovers, luck levels, bonuses, daily rewards, gifts,
   codes, rarities, sounds
 - [`Pets.luau`](src/shared/Pets.luau): every pet (generated looks come from colours and features;
   see above to use real models)
@@ -137,7 +153,7 @@ tests/          Luau unit tests for the shared rules (odds, formatting, streaks,
 ```
 
 The server is authoritative for everything. The client only asks (`Action` remote) and
-displays. Taps are rate limited, orb pickups and hatches are distance checked, and player data
+displays. Taps are rate limited, clover pickups and hatches are distance checked, and player data
 uses session locking so two servers can never save the same player.
 
 ## Checks

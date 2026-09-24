@@ -1,6 +1,6 @@
 --[[
 	Areas laid end to end along +Z. Unlocking an area permanently raises the tap multiplier to
-	that area's TapMultiplier and opens its egg and orbs. Visual theme values are read by the
+	that area's TapMultiplier and opens its egg and clovers. Visual theme values are read by the
 	server's world builder and by the client when you walk between areas.
 ]]
 
@@ -10,7 +10,8 @@ export type Zone = {
 	Icon: string,
 	UnlockCost: number,
 	TapMultiplier: number,
-	OrbValue: number,
+	-- Luck XP per clover picked up here.
+	CloverValue: number,
 	Theme: string,
 	Ground: Color3,
 	GroundMaterial: Enum.Material,
@@ -30,7 +31,7 @@ local List: { Zone } = {
 		Icon = "🌼",
 		UnlockCost = 0,
 		TapMultiplier = 1,
-		OrbValue = 6,
+		CloverValue = 1,
 		Theme = "Meadow",
 		Ground = rgb(110, 190, 85),
 		GroundMaterial = Enum.Material.Grass,
@@ -44,9 +45,9 @@ local List: { Zone } = {
 		Index = 2,
 		Name = "Candy Kingdom",
 		Icon = "🍭",
-		UnlockCost = 20_000,
+		UnlockCost = 12_000,
 		TapMultiplier = 1.5,
-		OrbValue = 8,
+		CloverValue = 2,
 		Theme = "Candy",
 		Ground = rgb(255, 185, 220),
 		GroundMaterial = Enum.Material.SmoothPlastic,
@@ -60,9 +61,9 @@ local List: { Zone } = {
 		Index = 3,
 		Name = "Frosty Peaks",
 		Icon = "❄️",
-		UnlockCost = 2_000_000,
+		UnlockCost = 1_200_000,
 		TapMultiplier = 2.25,
-		OrbValue = 10,
+		CloverValue = 3,
 		Theme = "Frost",
 		Ground = rgb(235, 245, 255),
 		GroundMaterial = Enum.Material.Snow,
@@ -76,9 +77,9 @@ local List: { Zone } = {
 		Index = 4,
 		Name = "Lava Land",
 		Icon = "🌋",
-		UnlockCost = 250_000_000,
+		UnlockCost = 150_000_000,
 		TapMultiplier = 3.5,
-		OrbValue = 12,
+		CloverValue = 4,
 		Theme = "Lava",
 		Ground = rgb(70, 45, 40),
 		GroundMaterial = Enum.Material.Basalt,
@@ -92,9 +93,9 @@ local List: { Zone } = {
 		Index = 5,
 		Name = "Cosmic Void",
 		Icon = "🌌",
-		UnlockCost = 25_000_000_000,
+		UnlockCost = 15_000_000_000,
 		TapMultiplier = 5,
-		OrbValue = 15,
+		CloverValue = 5,
 		Theme = "Cosmic",
 		Ground = rgb(30, 20, 55),
 		GroundMaterial = Enum.Material.Slate,

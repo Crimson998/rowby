@@ -33,20 +33,32 @@ Config.Pets = {
 }
 
 Config.Rebirth = {
-	BaseCost = 400_000,
+	BaseCost = 250_000,
 	CostGrowth = 3.2,
 	MultiplierPerRebirth = 0.5,
 	BaseGems = 20,
 	GemsPerRebirth = 5,
 }
 
+-- Clovers on the ground. Coins only come from tapping; clovers build your Luck level.
+-- Each clover gives the area's CloverValue in Luck XP (see Zones.luau).
 Config.Orbs = {
 	PerZone = 18,
 	RespawnSeconds = 3,
-	GemChance = 0.04,
-	GemAmount = { 1, 3 },
+	-- Chance a clover spawns as a golden Lucky Clover worth LuckyMultiplier times as much.
+	LuckyChance = 0.04,
+	LuckyMultiplier = 10,
 	BaseMagnetRadius = 7,
 	MagnetPerLevel = 3,
+}
+
+-- Luck level from clovers. Reaching level L takes BaseXP * L^Exponent Luck XP in total,
+-- and every level adds PerLevel to your luck (0.02 = +2%). Luck is never lost on rebirth.
+Config.Luck = {
+	BaseXP = 20,
+	Exponent = 1.6,
+	PerLevel = 0.02,
+	MaxLevel = 200,
 }
 
 Config.WalkSpeed = {

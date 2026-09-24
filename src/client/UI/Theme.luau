@@ -11,6 +11,7 @@ return {
 		SubText = rgb(190, 195, 225),
 		Coins = rgb(255, 205, 60),
 		Gems = rgb(90, 220, 255),
+		Luck = rgb(90, 225, 110),
 		Rebirth = rgb(255, 115, 215),
 		Green = rgb(70, 205, 100),
 		Red = rgb(235, 75, 90),
