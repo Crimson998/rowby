@@ -5,6 +5,12 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
+      },
+      "PetModels": {
+        "$path": "assets/PetModels"
+      },
+      "EggModels": {
+        "$path": "assets/EggModels"
       }
     },
     "ServerScriptService": {
@@ -38,7 +44,11 @@
         "ClockTime": 14,
         "Brightness": 2.5,
         "GlobalShadows": true,
-        "OutdoorAmbient": [0.55, 0.55, 0.6]
+        "OutdoorAmbient": [
+          0.55,
+          0.55,
+          0.6
+        ]
       }
     },
     "SoundService": {

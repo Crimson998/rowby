@@ -1,11 +1,13 @@
 --[[
 	Builds cute pet and egg models from their definitions, so adding a pet only needs data.
+	Your own models in ReplicatedStorage.PetModels / EggModels take priority (see CustomModels).
 	Models face -Z. The body ("Root") is the PrimaryPart and every other part is welded to it.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CustomModels = require(Shared.CustomModels)
 local Eggs = require(Shared.Eggs)
 local Pets = require(Shared.Pets)
 
@@ -212,6 +214,11 @@ local FEATURES: { [string]: FeatureBuilder } = {
 }
 
 function PetModels.pet(petId: string, golden: boolean?): Model
+	local custom = CustomModels.get("PetModels", petId, 2.6, false, golden)
+	if custom then
+		return custom
+	end
+
 	local def = Pets[petId]
 	local model = Instance.new("Model")
 	model.Name = petId
@@ -261,6 +268,11 @@ function PetModels.pet(petId: string, golden: boolean?): Model
 end
 
 function PetModels.egg(eggId: string): Model
+	local custom = CustomModels.get("EggModels", eggId, 2.8, false)
+	if custom then
+		return custom
+	end
+
 	local egg = Eggs.ById[eggId]
 	local model = Instance.new("Model")
 	model.Name = eggId .. "Egg"

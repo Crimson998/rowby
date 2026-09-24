@@ -80,14 +80,47 @@ Pacing (from an economy simulation run while tuning, active player, no purchases
 ~3 min, third in ~20 min, first rebirth around 20 min, fourth area in ~1.5–2 h, fifth as a
 multi-session goal.
 
+## Using your own pet and egg models
+
+Every pet and egg has a generated look, so the game works with no art at all. To swap in your
+own, add a model named after the pet's id from [`Pets.luau`](src/shared/Pets.luau) (e.g.
+`Doggy`, `CandyDragon`) or the egg's id from [`Eggs.luau`](src/shared/Eggs.luau) (e.g. `Meadow`).
+Anything you don't replace keeps its generated look.
+
+| Replace | Put the model in | Named |
+| --- | --- | --- |
+| A pet | `ReplicatedStorage > PetModels` | the pet id, e.g. `Doggy` |
+| A pet's golden version (optional) | `ReplicatedStorage > PetModels` | `Doggy_Golden` (otherwise the normal model is painted gold) |
+| An egg (world stand and hatch animation) | `ReplicatedStorage > EggModels` | the egg id, e.g. `Meadow` |
+
+**If you edit in Studio only:** build the place once, then drag your models into those folders in
+Studio and publish from there. Don't rebuild with Rojo afterwards, or the build replaces your
+Studio changes.
+
+**If you use Rojo:** in Studio, right-click the model → **Save to File…** and save it as
+`assets/PetModels/Doggy.rbxm` (or `assets/EggModels/Meadow.rbxm`). The file name becomes the
+model name, and every `rojo build` includes it.
+
+What the game does with your model:
+
+- **Size:** it's scaled so its largest side is about 2.6 studs for pets and 7 studs for world
+  eggs. Add a boolean attribute `KeepScale` = true to the model to keep your own size.
+- **Facing:** the pet faces the way the model's pivot faces (its front / LookVector). If a pet
+  walks backwards, rotate the model's pivot in Studio (Model tab → Edit Pivot).
+- **Safety:** scripts inside the model are deleted, so free Toolbox models can't run code.
+- **Typos:** the server warns in Output about any model whose name doesn't match a pet or egg id.
+
+To add a brand-new pet, add an entry to `Pets.luau`, add it to an egg in `Eggs.luau`, then
+give it a model the same way.
+
 ## Tuning
 
 All the numbers live in data modules, so balancing never means touching gameplay code:
 
 - [`Config.luau`](src/shared/Config.luau): rebirth curve, orbs, bonuses, daily rewards, gifts,
   codes, rarities, sounds
-- [`Pets.luau`](src/shared/Pets.luau): every pet (looks come from colours and features, so no
-  modelling is needed)
+- [`Pets.luau`](src/shared/Pets.luau): every pet (generated looks come from colours and features;
+  see above to use real models)
 - [`Eggs.luau`](src/shared/Eggs.luau): prices and drop weights
 - [`Zones.luau`](src/shared/Zones.luau): areas, unlock costs, multipliers, lighting
 - [`Upgrades.luau`](src/shared/Upgrades.luau): coin and gem upgrades
@@ -97,6 +130,7 @@ All the numbers live in data modules, so balancing never means touching gameplay
 
 ```
 src/shared/     ReplicatedStorage.Shared    data + formulas used by server and client
+assets/         ReplicatedStorage.PetModels / EggModels  your own .rbxm models (optional)
 src/server/     ServerScriptService.Server  services (data, world, pets, economy, rewards, shop…)
 src/client/     StarterPlayerScripts.Client UI, pet rendering, world effects, input
 tests/          Luau unit tests for the shared rules (odds, formatting, streaks, catalog)

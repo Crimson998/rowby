@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
+local CustomModels = require(Shared.CustomModels)
 local Eggs = require(Shared.Eggs)
 local Format = require(Shared.Format)
 local Formula = require(Shared.Formula)
@@ -560,37 +561,44 @@ local function buildEggStand(egg)
 		{ Material = Enum.Material.Neon }
 	)
 
-	local eggModel = Instance.new("Model")
-	eggModel.Name = "Egg"
-	local shell = part({
-		Name = "Shell",
-		Size = Vector3.new(5.5, 7, 5.5),
-		CFrame = CFrame.new(base + Vector3.new(0, 6.8, 0)),
-		Color = egg.Color,
-		CanCollide = false,
-		Parent = eggModel,
-	})
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Sphere
-	mesh.Parent = shell
-	cylinder(
-		Vector3.new(0.7, 5.6, 5.6),
-		CFrame.new(base + Vector3.new(0, 6.8, 0)),
-		egg.Accent,
-		eggModel,
-		{ CanCollide = false }
-	)
-	for index = 1, 4 do
-		local angle = index * math.pi / 2 + math.pi / 4
-		ball(
-			1.1,
-			base + Vector3.new(math.cos(angle) * 2.35, 8.6, math.sin(angle) * 2.35),
+	-- Your own egg from ReplicatedStorage.EggModels if there is one, otherwise a generated egg.
+	local eggModel = CustomModels.get("EggModels", egg.Id, 7, true)
+	if eggModel then
+		eggModel:PivotTo(CFrame.new(base + Vector3.new(0, 6.8, 0)))
+	else
+		eggModel = Instance.new("Model")
+		eggModel.Name = "Egg"
+		local shell = part({
+			Name = "Shell",
+			Size = Vector3.new(5.5, 7, 5.5),
+			CFrame = CFrame.new(base + Vector3.new(0, 6.8, 0)),
+			Color = egg.Color,
+			CanCollide = false,
+			Parent = eggModel,
+		})
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Parent = shell
+		cylinder(
+			Vector3.new(0.7, 5.6, 5.6),
+			CFrame.new(base + Vector3.new(0, 6.8, 0)),
 			egg.Accent,
 			eggModel,
 			{ CanCollide = false }
 		)
+		for index = 1, 4 do
+			local angle = index * math.pi / 2 + math.pi / 4
+			ball(
+				1.1,
+				base + Vector3.new(math.cos(angle) * 2.35, 8.6, math.sin(angle) * 2.35),
+				egg.Accent,
+				eggModel,
+				{ CanCollide = false }
+			)
+		end
+		eggModel.PrimaryPart = shell
 	end
-	eggModel.PrimaryPart = shell
+	eggModel.Name = "Egg"
 	eggModel.Parent = model
 
 	local promptAnchor = part({
@@ -704,7 +712,32 @@ function WorldService.eggPosition(eggId: string): Vector3?
 	return prompts and prompts.Position
 end
 
+-- Flags custom models whose names don't match a pet or egg id (usually a typo).
+local function checkCustomModels()
+	local Pets = require(Shared.Pets)
+	local folders = { PetModels = Pets, EggModels = Eggs.ById }
+	for folderName, known in folders do
+		local folder = ReplicatedStorage:FindFirstChild(folderName)
+		if not folder then
+			continue
+		end
+		for _, child in folder:GetChildren() do
+			local id = string.gsub(child.Name, "_Golden$", "")
+			if not (known :: any)[id] then
+				warn(
+					string.format(
+						"[CustomModels] %s.%s doesn't match any id, so it won't be used",
+						folderName,
+						child.Name
+					)
+				)
+			end
+		end
+	end
+end
+
 function WorldService.Init()
+	checkCustomModels()
 	worldFolder = Instance.new("Folder")
 	worldFolder.Name = "World"
 	worldFolder.Parent = workspace
