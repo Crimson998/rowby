@@ -186,14 +186,15 @@ Config.Rarities = {
 
 --[[
 	Background music. Upload an .mp3 or .ogg in Studio (View → Asset Manager → Import, or the
-	Creator Dashboard), copy its id and paste it here as "rbxassetid://<id>".
+	Creator Dashboard), copy its id and paste it here, e.g. "rbxassetid://134560478376241"
+	(just the number works too).
 	Default plays everywhere; an entry in Areas (keyed by the area's Theme from Zones.luau)
 	replaces it in that area. Leave a value "" for no music. Tracks loop, so short ones are fine.
 ]]
 Config.Music = {
 	Volume = 0.3,
 	FadeSeconds = 1.5,
-	Default = "rbxassetid://<134560478376241>",
+	Default = "rbxassetid://134560478376241",
 	Areas = {
 		Meadow = "",
 		Candy = "",

@@ -69,11 +69,17 @@ local function refresh()
 	end
 end
 
+-- Accepts "rbxassetid://123", "123" or 123 (and ignores stray spaces or brackets). "" = none.
+local function soundId(value: any): string
+	local digits = string.match(tostring(value or ""), "%d+")
+	return if digits then "rbxassetid://" .. digits else ""
+end
+
 -- Called by the World controller whenever you walk into an area (by its Zones.luau Theme).
 function Music.setArea(theme: string)
-	local id = Config.Music.Areas[theme]
-	if id == nil or id == "" then
-		id = Config.Music.Default
+	local id = soundId(Config.Music.Areas[theme])
+	if id == "" then
+		id = soundId(Config.Music.Default)
 	end
 	if not watching then
 		watching = true

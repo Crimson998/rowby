@@ -180,7 +180,8 @@ Music is off until you give it a track:
 1. In Studio, open **View → Asset Manager**, click **Import** (the upload icon) and pick your
    .mp3 or .ogg. Or upload it on the Creator Dashboard under **Development Items → Audio**.
 2. Right-click the uploaded audio → **Copy Asset ID**.
-3. In `src/shared/Config.luau`, set `Config.Music.Default = "rbxassetid://<id>"`.
+3. In `src/shared/Config.luau`, set `Config.Music.Default = "rbxassetid://134560478376241"` (your own number; just the
+   number works too).
 
 That track then loops everywhere. To give an area its own track, fill in its entry under
 `Config.Music.Areas` (Meadow, Candy, Frost, Lava, Cosmic); walking between areas crossfades.
