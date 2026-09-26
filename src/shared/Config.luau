@@ -5,7 +5,7 @@
 
 local Config = {}
 
-Config.GameName = "Tap & Hatch"
+Config.GameName = "Tap & Hatch Alpha"
 
 Config.Data = {
 	StoreName = "TapAndHatch_Players_v1",
