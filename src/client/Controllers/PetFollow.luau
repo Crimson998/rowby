@@ -39,15 +39,16 @@ local function build(player: Player, key: string): Rendered
 	clear(player)
 	local entry: Rendered = { Key = key, Models = {}, Current = {} }
 	for token in string.gmatch(key, "[^,]+") do
-		local petId, golden = string.match(token, "^([^:]+)(:?G?)$")
+		-- "Doggy" or "Doggy:3" (tier 3)
+		local petId, tierText = string.match(token, "^([^:]+):?(%d*)$")
 		if petId and Pets[petId] then
-			local model = PetModels.pet(petId, golden == ":G")
+			local tier = tonumber(tierText) or 1
+			local model = PetModels.pet(petId, tier)
 			local rarity = Pets[petId].Rarity
-			if golden == ":G" or Config.Rarities[rarity].Announce then
+			local tierDef = Config.Tiers[tier] or Config.Tiers[1]
+			if tier > 1 or Config.Rarities[rarity].Announce then
 				local sparkles = Instance.new("Sparkles")
-				sparkles.SparkleColor = if golden == ":G"
-					then Color3.fromRGB(255, 220, 90)
-					else Config.Rarities[rarity].Color
+				sparkles.SparkleColor = if tier > 1 then tierDef.Accent else Config.Rarities[rarity].Color
 				sparkles.Parent = model.PrimaryPart
 			end
 			model.Parent = folder

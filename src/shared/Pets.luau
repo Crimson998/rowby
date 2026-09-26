@@ -1,6 +1,6 @@
 --[[
 	Every pet in the game. Power is added to the player's coin multiplier while the pet is
-	equipped (golden pets multiply it by Config.Pets.GoldenMultiplier).
+	equipped, multiplied by the pet's tier (Golden, Diamond, … see Config.Tiers).
 
 	Looks are generated from Color/Accent/Features by the client's PetModels module, so new
 	pets need no modelling: pick colours and any of

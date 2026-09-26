@@ -171,9 +171,9 @@ function HatchOverlay.play(eggId: string, results: { Result })
 	for _, slot in slots do
 		local pet = Pets[slot.Result.Id]
 		local rarity = Config.Rarities[pet.Rarity]
-		Viewport.show(slot.Viewport, PetModels.pet(slot.Result.Id, false), 5.2)
+		Viewport.show(slot.Viewport, PetModels.pet(slot.Result.Id, 1), 5.2)
 		slot.Name.Text = pet.Name
-		slot.Rarity.Text = pet.Rarity .. "  ·  +" .. Format.number(Formula.petPower(slot.Result.Id, false)) .. "x"
+		slot.Rarity.Text = pet.Rarity .. "  ·  +" .. Format.number(Formula.petPower(slot.Result.Id, 1)) .. "x"
 		slot.Rarity.TextColor3 = rarity.Color
 		if slot.Result.Deleted then
 			slot.Rarity.Text = "🗑 Auto-deleted"

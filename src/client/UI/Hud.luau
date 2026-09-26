@@ -379,7 +379,7 @@ local function buildRightColumn(screen: ScreenGui, openShop: (string) -> ())
 		Name = "Right",
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -12, 0.5, 0),
-		Size = UDim2.fromOffset(180, 150),
+		Size = UDim2.fromOffset(180, 210),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	}, { Util.list(Enum.FillDirection.Vertical, 10, Enum.HorizontalAlignment.Right) })
@@ -398,6 +398,21 @@ local function buildRightColumn(screen: ScreenGui, openShop: (string) -> ())
 		end
 	)
 	Util.gradient(Color3.fromRGB(255, 180, 90), Color3.fromRGB(255, 80, 170)).Parent = starter
+	-- Only admins (Studio, the place owner, Config.Admins) see this; the server checks too.
+	local admin = Util.button({
+		LayoutOrder = 3,
+		Text = "🛠 Admin (F2)",
+		Color = Theme.Colors.Red,
+		Size = UDim2.fromOffset(180, 44),
+		Visible = false,
+		Parent = column,
+	}, function()
+		Windows.toggle("Admin")
+	end)
+	State.watch({ "Session.IsAdmin" }, function()
+		admin.Visible = State.Session.IsAdmin == true
+	end)
+
 	local pack = Products.ProductByKey.StarterPack
 	starter.Text = "🎁 Starter Pack\nR$ " .. pack.Price
 	State.watch({ "OneTime" }, function()

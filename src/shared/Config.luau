@@ -5,6 +5,13 @@
 
 local Config = {}
 
+-- Who can open the 🛠 Admin panel. Everyone is an admin in Studio; in live servers the place
+-- owner (or, for group games, members at GroupMinRank or above) plus these user ids.
+Config.Admins = {
+	UserIds = {},
+	GroupMinRank = 254,
+}
+
 Config.GameName = "Tap & Hatch Alpha"
 
 Config.Data = {
@@ -26,12 +33,55 @@ Config.Tap = {
 Config.Pets = {
 	BaseEquipSlots = 3,
 	Storage = 150,
-	GoldenCopies = 5,
-	GoldenMultiplier = 3,
+	-- Copies of one pet at one tier that combine into one pet of the next tier (see Config.Tiers).
+	CraftCopies = 5,
 	HatchCooldown = 1.3,
 	HatchRange = 20,
 	-- Rarities players may auto-delete on hatch (Settings). Rarer pets are always kept.
 	AutoDeletable = { "Common", "Uncommon", "Rare", "Epic" },
+}
+
+-- Pet tiers, lowest first. CraftCopies pets of a tier combine into one of the next tier, and a
+-- pet's power is multiplied by its tier's Multiplier. Tier 1 uses the pet's own colours; higher
+-- tiers repaint it (or use a "<PetId>_<Name>" custom model, see CustomModels.luau).
+local rgb = Color3.fromRGB
+Config.Tiers = {
+	{ Name = "Normal", Icon = "", Multiplier = 1 },
+	{
+		Name = "Golden",
+		Icon = "⭐",
+		Multiplier = 3,
+		Color = rgb(255, 200, 45),
+		Accent = rgb(255, 240, 160),
+		Reflectance = 0.25,
+	},
+	{
+		Name = "Diamond",
+		Icon = "💎",
+		Multiplier = 8,
+		Color = rgb(165, 235, 255),
+		Accent = rgb(255, 255, 255),
+		Reflectance = 0.4,
+		NeonAccent = true,
+	},
+	{
+		Name = "Emerald",
+		Icon = "💚",
+		Multiplier = 20,
+		Color = rgb(35, 205, 115),
+		Accent = rgb(185, 255, 215),
+		Reflectance = 0.35,
+		NeonAccent = true,
+	},
+	{
+		Name = "Void",
+		Icon = "🌀",
+		Multiplier = 50,
+		Color = rgb(30, 12, 50),
+		Accent = rgb(185, 95, 255),
+		Reflectance = 0.1,
+		NeonAccent = true,
+	},
 }
 
 Config.Rebirth = {

@@ -114,7 +114,10 @@ local function checkCustomModels()
 			continue
 		end
 		for _, child in folder:GetChildren() do
-			local id = string.gsub(child.Name, "_Golden$", "")
+			local id = child.Name
+			for _, tier in Config.Tiers do
+				id = string.gsub(id, "_" .. tier.Name .. "$", "")
+			end
 			if not (known :: any)[id] then
 				warn(
 					string.format(

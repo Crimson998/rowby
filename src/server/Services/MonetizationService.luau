@@ -44,10 +44,29 @@ local function applyPass(profile, key: string)
 	end
 end
 
+-- Admin/testing: give or take a pass for this session only.
+function MonetizationService.setPass(profile, key: string, owned: boolean)
+	if owned then
+		applyPass(profile, key)
+		return
+	end
+	local session = profile.Session
+	session.Passes[key] = nil
+	DataService.change(profile, "Session.Passes")
+	if key == "VIP" then
+		profile.Player:SetAttribute("VIP", nil)
+	end
+	if key == "AutoTap" then
+		session.AutoTap = false
+		DataService.change(profile, "Session.AutoTap")
+	end
+	PetService.equipBest(profile)
+end
+
 local function grantProduct(profile, product: Products.DevProduct)
 	DataService.grantReward(profile, product.Reward)
 	if product.Reward.Pet then
-		PetService.givePet(profile, product.Reward.Pet, false)
+		PetService.givePet(profile, product.Reward.Pet, 1)
 		PetService.equipBest(profile)
 	end
 	if product.OneTime then

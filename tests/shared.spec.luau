@@ -174,6 +174,21 @@ test("auto-delete can never remove Legendary or rarer pets", function()
 	end
 end)
 
+test("each pet tier is stronger than the one below and worth crafting", function()
+	eq(Config.Tiers[1].Multiplier, 1, "Normal tier")
+	for index = 2, #Config.Tiers do
+		local tier, below = Config.Tiers[index], Config.Tiers[index - 1]
+		assert(tier.Multiplier > below.Multiplier, tier.Name .. " must beat " .. below.Name)
+		assert(tier.Color and tier.Accent, tier.Name .. " needs colours for repainting")
+		-- Crafting trades CraftCopies pets for one: it should always free up slots for a stronger pet.
+		assert(tier.Multiplier > below.Multiplier * 2, tier.Name .. " is too weak to be worth crafting")
+	end
+	eq(Formula.petPower("Doggy", 3), Pets.Doggy.Power * Config.Tiers[3].Multiplier, "Diamond power")
+	eq(Formula.tier(nil), 1, "missing tier is Normal")
+	eq(Formula.tier(99), #Config.Tiers, "tier is capped")
+	eq(Formula.tier(0), 1, "tier has a floor")
+end)
+
 -- Odds ---------------------------------------------------------------------------------------
 
 test("odds always sum to 100% and luck only helps rare pets", function()
@@ -223,9 +238,9 @@ test("multipliers stack as documented", function()
 	data.Rebirths = 2 -- x2
 	data.HighestZone = 2 -- x1.5
 	data.Pets = {
-		p1 = { Id = "Doggy", Golden = false, Equipped = true }, -- +0.2
-		p2 = { Id = "Kitty", Golden = true, Equipped = true }, -- +0.35 * 3
-		p3 = { Id = "Bunny", Golden = false, Equipped = false }, -- not equipped
+		p1 = { Id = "Doggy", Tier = 1, Equipped = true }, -- +0.2
+		p2 = { Id = "Kitty", Tier = 2, Equipped = true }, -- +0.35 * 3 (Golden)
+		p3 = { Id = "Bunny", Tier = 1, Equipped = false }, -- not equipped
 	}
 	local session = freshSession()
 	local expected = 5 * (1 + 0.2 + 1.05) * 2 * 1.5

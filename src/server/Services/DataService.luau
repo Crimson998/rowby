@@ -29,7 +29,7 @@ export type Profile = {
 	Released: boolean,
 }
 
-local DATA_VERSION = 1
+local DATA_VERSION = 2
 
 local TEMPLATE = {
 	Version = DATA_VERSION,
@@ -47,7 +47,7 @@ local TEMPLATE = {
 		Luck = 0,
 		CoinMastery = 0,
 	},
-	-- [uid] = { Id = petId, Golden = bool, Equipped = bool }
+	-- [uid] = { Id = petId, Tier = 1..#Config.Tiers, Equipped = bool, Locked = true? }
 	Pets = {},
 	NextPetUid = 1,
 	-- [petId] = true once discovered
@@ -118,6 +118,13 @@ end
 
 local function migrate(data)
 	-- Bump DATA_VERSION and transform old data here when the save format changes.
+	if (data.Version or 1) < 2 then
+		-- v2: Golden = true/false became Tier (1 = Normal, 2 = Golden, 3+ = higher tiers).
+		for _, pet in data.Pets do
+			pet.Tier = if pet.Golden then 2 else 1
+			pet.Golden = nil
+		end
+	end
 	data.Version = DATA_VERSION
 end
 
@@ -298,6 +305,24 @@ end
 
 -- Marks keys for replication: DataService.change(profile, "Coins", "Stats") or
 -- DataService.change(profile, "Session.Passes").
+-- Sends the whole profile again (after large changes such as an admin data reset).
+function DataService.resync(profile: Profile)
+	table.clear(profile.Dirty.Data)
+	table.clear(profile.Dirty.Session)
+	syncRemote:FireClient(profile.Player, { Data = profile.Data, Session = profile.Session, Full = true })
+end
+
+-- Admin/testing: wipes the profile back to a new player's data. Receipts and one-time
+-- purchases are kept so real purchases can never be granted twice.
+function DataService.reset(profile: Profile)
+	local old = profile.Data
+	local fresh = deepCopy(TEMPLATE)
+	fresh.Purchases = old.Purchases
+	fresh.OneTime = old.OneTime
+	profile.Data = fresh
+	DataService.resync(profile)
+end
+
 function DataService.change(profile: Profile, ...: string)
 	for _, key in { ... } do
 		local section, name = string.match(key, "^(%a+)%.(.+)$")

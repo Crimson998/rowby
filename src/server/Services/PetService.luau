@@ -1,5 +1,5 @@
 --[[
-	Hatching, inventory, equipping, locking, golden crafting, bulk clean-up and the pet index.
+	Hatching, inventory, equipping, locking, tier crafting, bulk clean-up and the pet index.
 ]]
 
 local Players = game:GetService("Players")
@@ -34,11 +34,12 @@ local function refreshAttribute(profile)
 		end
 	end
 	table.sort(equipped, function(a, b)
-		return Formula.petPower(a.Id, a.Golden) > Formula.petPower(b.Id, b.Golden)
+		return Formula.petPower(a.Id, a.Tier) > Formula.petPower(b.Id, b.Tier)
 	end)
 	local parts = {}
 	for _, pet in equipped do
-		table.insert(parts, if pet.Golden then pet.Id .. ":G" else pet.Id)
+		local tier = Formula.tier(pet.Tier)
+		table.insert(parts, if tier > 1 then pet.Id .. ":" .. tier else pet.Id)
 	end
 	profile.Player:SetAttribute("EquippedPets", table.concat(parts, ","))
 end
@@ -63,7 +64,7 @@ function PetService.equipBest(profile)
 	local slots = Formula.equipSlots(data, profile.Session)
 	local ranked = {}
 	for uid, pet in data.Pets do
-		table.insert(ranked, { Uid = uid, Power = Formula.petPower(pet.Id, pet.Golden) })
+		table.insert(ranked, { Uid = uid, Power = Formula.petPower(pet.Id, pet.Tier) })
 	end
 	table.sort(ranked, function(a, b)
 		if a.Power == b.Power then
@@ -90,11 +91,11 @@ local function afterInventoryChange(profile)
 end
 
 -- Adds a pet and returns its uid and whether it was a new index discovery.
-function PetService.givePet(profile, petId: string, golden: boolean?): (string, boolean)
+function PetService.givePet(profile, petId: string, tier: number?): (string, boolean)
 	local data = profile.Data
 	local uid = "p" .. data.NextPetUid
 	data.NextPetUid += 1
-	data.Pets[uid] = { Id = petId, Golden = golden == true, Equipped = false }
+	data.Pets[uid] = { Id = petId, Tier = Formula.tier(tier), Equipped = false }
 
 	local discovered = false
 	if not data.Index[petId] then
@@ -189,7 +190,7 @@ local function hatch(profile, eggId, count)
 	data.Coins -= cost
 	for _, result in results do
 		if not result.Deleted then
-			result.Uid = PetService.givePet(profile, result.Id, false)
+			result.Uid = PetService.givePet(profile, result.Id, 1)
 		end
 		announce(player, result.Id, odds)
 	end
@@ -262,13 +263,13 @@ local function deletePets(profile, uids)
 	end
 end
 
--- Deletes every unlocked, unequipped, non-golden pet weaker than your weakest equipped pet.
+-- Deletes every unlocked, unequipped, Normal-tier pet weaker than your weakest equipped pet.
 local function deleteWeak(profile)
 	local data = profile.Data
 	local weakest = math.huge
 	for _, pet in data.Pets do
 		if pet.Equipped then
-			weakest = math.min(weakest, Formula.petPower(pet.Id, pet.Golden))
+			weakest = math.min(weakest, Formula.petPower(pet.Id, pet.Tier))
 		end
 	end
 	if weakest == math.huge then
@@ -277,8 +278,9 @@ local function deleteWeak(profile)
 	end
 	local removed = 0
 	for uid, pet in data.Pets do
-		local weak = Formula.petPower(pet.Id, pet.Golden) < weakest
-		if weak and not pet.Equipped and not pet.Locked and not pet.Golden and not isPrecious(pet) then
+		local weak = Formula.petPower(pet.Id, pet.Tier) < weakest
+		local upgraded = Formula.tier(pet.Tier) > 1
+		if weak and not pet.Equipped and not pet.Locked and not upgraded and not isPrecious(pet) then
 			data.Pets[uid] = nil
 			removed += 1
 		end
@@ -291,16 +293,20 @@ local function deleteWeak(profile)
 	DataService.notify(profile.Player, "🗑 Deleted " .. removed .. " weak pets", "Success")
 end
 
--- Turns GoldenCopies unlocked copies of a pet into one golden pet. Returns true on success.
-local function craftGolden(profile, petId: string): boolean
+-- Combines CraftCopies unlocked copies of a pet at `tier` into one pet of the next tier.
+-- Returns true on success.
+local function craftTier(profile, petId: string, tier: number): boolean
 	local data = profile.Data
+	if tier >= #Config.Tiers then
+		return false
+	end
 	local copies = {}
 	for uid, pet in data.Pets do
-		if pet.Id == petId and not pet.Golden and not pet.Locked then
+		if pet.Id == petId and Formula.tier(pet.Tier) == tier and not pet.Locked then
 			table.insert(copies, uid)
 		end
 	end
-	if #copies < Config.Pets.GoldenCopies then
+	if #copies < Config.Pets.CraftCopies then
 		return false
 	end
 	-- Use unequipped copies first.
@@ -311,46 +317,61 @@ local function craftGolden(profile, petId: string): boolean
 		end
 		return a < b
 	end)
-	for index = 1, Config.Pets.GoldenCopies do
+	for index = 1, Config.Pets.CraftCopies do
 		data.Pets[copies[index]] = nil
 	end
-	PetService.givePet(profile, petId, true)
+	PetService.givePet(profile, petId, tier + 1)
 	return true
 end
 
-local function makeGolden(profile, petId)
-	if type(petId) ~= "string" or not Pets[petId] then
+local function craft(profile, petId, tier)
+	if type(petId) ~= "string" or not Pets[petId] or type(tier) ~= "number" then
 		return
 	end
-	if not craftGolden(profile, petId) then
+	tier = Formula.tier(tier)
+	if tier >= #Config.Tiers then
+		DataService.notify(profile.Player, "That pet is already the highest tier!", "Info")
+		return
+	end
+	if not craftTier(profile, petId, tier) then
 		DataService.notify(
 			profile.Player,
-			"You need " .. Config.Pets.GoldenCopies .. " unlocked copies of the same pet to make it golden.",
+			"You need " .. Config.Pets.CraftCopies .. " unlocked copies of the same pet and tier.",
 			"Error"
 		)
 		return
 	end
 	afterInventoryChange(profile)
-	DataService.notify(profile.Player, "✨ Made a Golden " .. Pets[petId].Name .. "!", "Success")
+	local next = Config.Tiers[tier + 1]
+	DataService.notify(
+		profile.Player,
+		next.Icon .. " Made a " .. next.Name .. " " .. Pets[petId].Name .. "!",
+		"Success"
+	)
 end
 
-local function makeAllGolden(profile)
+-- Crafts everything possible, lowest tier first, so new pets can keep combining upwards.
+local function craftAll(profile)
 	local made = 0
-	for petId in Pets do
-		while craftGolden(profile, petId) do
-			made += 1
+	for tier = 1, #Config.Tiers - 1 do
+		for petId in Pets do
+			while craftTier(profile, petId, tier) do
+				made += 1
+			end
 		end
 	end
 	if made == 0 then
 		DataService.notify(
 			profile.Player,
-			"Nothing to craft yet: you need " .. Config.Pets.GoldenCopies .. " unlocked copies of a pet.",
+			"Nothing to craft yet: you need "
+				.. Config.Pets.CraftCopies
+				.. " unlocked copies of a pet at the same tier.",
 			"Info"
 		)
 		return
 	end
 	afterInventoryChange(profile)
-	DataService.notify(profile.Player, "✨ Made " .. made .. " golden pets!", "Success")
+	DataService.notify(profile.Player, "✨ Crafted " .. made .. " upgraded pets!", "Success")
 end
 
 function PetService.Init()
@@ -396,8 +417,8 @@ function PetService.Start()
 	Actions.register("SetLocked", setLocked)
 	Actions.register("DeletePets", deletePets)
 	Actions.register("DeleteWeak", deleteWeak)
-	Actions.register("MakeGolden", makeGolden)
-	Actions.register("MakeAllGolden", makeAllGolden)
+	Actions.register("Craft", craft)
+	Actions.register("CraftAll", craftAll)
 
 	Players.PlayerRemoving:Connect(function(player)
 		player:SetAttribute("EquippedPets", nil)

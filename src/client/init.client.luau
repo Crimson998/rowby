@@ -84,6 +84,7 @@ require(UI.GiftsWindow).build()
 require(UI.StatsWindow).build()
 require(UI.SettingsWindow).build()
 require(UI.CodesWindow).build()
+require(UI.AdminWindow).build()
 
 local Input = require(Controllers.Input)
 local Hud = require(UI.Hud)

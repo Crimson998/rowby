@@ -16,6 +16,7 @@ local ordered = {
 	require(Services.LeaderboardService),
 	require(Services.SocialService),
 	require(Services.SettingsService),
+	require(Services.AdminService),
 }
 
 for _, service in ordered do

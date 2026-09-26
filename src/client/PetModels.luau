@@ -7,6 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared.Config)
 local CustomModels = require(Shared.CustomModels)
 local Eggs = require(Shared.Eggs)
 local Pets = require(Shared.Pets)
@@ -213,8 +214,9 @@ local FEATURES: { [string]: FeatureBuilder } = {
 	end,
 }
 
-function PetModels.pet(petId: string, golden: boolean?): Model
-	local custom = CustomModels.get("PetModels", petId, 2.6, false, golden)
+-- `tier` is 1 (Normal) up to #Config.Tiers; higher tiers repaint the pet in the tier's colours.
+function PetModels.pet(petId: string, tier: number?): Model
+	local custom = CustomModels.get("PetModels", petId, 2.6, false, tier)
 	if custom then
 		return custom
 	end
@@ -223,9 +225,11 @@ function PetModels.pet(petId: string, golden: boolean?): Model
 	local model = Instance.new("Model")
 	model.Name = petId
 
-	local color = if golden then GOLD else def.Color
-	local accent = if golden then GOLD_ACCENT else def.Accent
-	local accentMaterial = if def.Neon then Enum.Material.Neon else Enum.Material.SmoothPlastic
+	local tierDef = Config.Tiers[tier or 1] or Config.Tiers[1]
+	local upgraded = tierDef.Color ~= nil
+	local color = if upgraded then tierDef.Color else def.Color
+	local accent = if upgraded then tierDef.Accent else def.Accent
+	local accentMaterial = if def.Neon or tierDef.NeonAccent then Enum.Material.Neon else Enum.Material.SmoothPlastic
 
 	local body: Part
 	local faceZ: number
@@ -238,8 +242,8 @@ function PetModels.pet(petId: string, golden: boolean?): Model
 	end
 	body.Name = "Root"
 	body.Anchored = true
-	if golden then
-		body.Reflectance = 0.25
+	if upgraded then
+		body.Reflectance = tierDef.Reflectance or 0.25
 	end
 	model.PrimaryPart = body
 

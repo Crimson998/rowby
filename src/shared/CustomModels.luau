@@ -7,29 +7,30 @@
 
 	- The model's front is the direction its pivot faces (the pivot's LookVector, -Z).
 	- It is resized to fit, unless you set a boolean attribute KeepScale = true on it.
-	- Golden pets use "<PetId>_Golden" if it exists, otherwise the model is painted gold.
+	- Higher tiers use "<PetId>_<Tier>" if it exists (e.g. "Doggy_Golden", "Doggy_Diamond",
+	  "Doggy_Void"), otherwise the normal model is repainted in that tier's colours.
 	- Scripts inside the model are removed, so Toolbox models can't run code.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local CustomModels = {}
+local Config = require(script.Parent.Config)
 
-local GOLD = Color3.fromRGB(255, 200, 45)
+local CustomModels = {}
 
 local function find(folderName: string, name: string): Instance?
 	local folder = ReplicatedStorage:FindFirstChild(folderName)
 	return folder and folder:FindFirstChild(name)
 end
 
-local function paintGold(model: Model)
+local function paintTier(model: Model, tier)
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("SurfaceAppearance") then
 			descendant:Destroy()
 		elseif descendant:IsA("BasePart") then
-			descendant.Color = GOLD
+			descendant.Color = tier.Color
 			descendant.Material = Enum.Material.SmoothPlastic
-			descendant.Reflectance = 0.3
+			descendant.Reflectance = tier.Reflectance or 0.3
 			if descendant:IsA("MeshPart") then
 				descendant.TextureID = ""
 			end
@@ -43,9 +44,11 @@ end
 	(static props); otherwise only the invisible Root is, and everything else is welded to it
 	so moving Root moves the whole model.
 ]]
-function CustomModels.get(folderName: string, name: string, size: number, anchorAll: boolean, golden: boolean?): Model?
-	local source = if golden then find(folderName, name .. "_Golden") else nil
-	local paint = golden == true and source == nil
+function CustomModels.get(folderName: string, name: string, size: number, anchorAll: boolean, tier: number?): Model?
+	local tierDef = Config.Tiers[tier or 1] or Config.Tiers[1]
+	local isUpgraded = (tier or 1) > 1
+	local source = if isUpgraded then find(folderName, name .. "_" .. tierDef.Name) else nil
+	local paint = isUpgraded and source == nil
 	source = source or find(folderName, name)
 	if not source then
 		return nil
@@ -89,7 +92,7 @@ function CustomModels.get(folderName: string, name: string, size: number, anchor
 		end
 	end
 	if paint then
-		paintGold(model)
+		paintTier(model, tierDef)
 	end
 
 	-- An invisible Root at the centre of the model, facing the model's front.

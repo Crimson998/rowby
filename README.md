@@ -68,8 +68,8 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 | Clovers → Luck level | 🍀 clovers on the ground give Luck XP (more in later areas, 10× for golden Lucky Clovers). Every Luck level adds +2% luck, forever |
 | Eggs → pets | Rarity reveals, a NEW! badge, a gem bonus for every new pet, server-wide shout-outs for Legendary and up |
 | Pet Index | A collection book with silhouettes of pets you haven't found yet |
-| Golden pets | Combine 5 copies into a pet with 3× power, one at a time or all at once |
-| Easy pet management | Duplicates stack into one card (×12), 🔒 lock favourites, one-click Equip Best / Craft All Golden / Delete Weak, auto-delete chosen rarities on hatch, 150 storage |
+| Pet tiers | Combine 5 copies into the next tier: ⭐ Golden ×3 → 💎 Diamond ×8 → 💚 Emerald ×20 → 🌀 Void ×50 power, one at a time or all at once |
+| Easy pet management | Duplicates stack into one card (×12), 🔒 lock favourites, one-click Equip Best / Craft All / Delete Weak, auto-delete chosen rarities on hatch, 150 storage |
 | Quality of life | Free Auto Hatch at any egg, Full / Fast / Off hatch animation, Max-buy upgrades, open all gifts at once, ⚙️ Settings for sounds and other players' pets |
 | Areas | Five themed areas, each with a new egg and a bigger multiplier |
 | Rebirth | Trade coins for a permanent multiplier plus gems |
@@ -150,7 +150,7 @@ Anything you don't replace keeps its generated look.
 | Replace | Put the model in | Named |
 | --- | --- | --- |
 | A pet | `ReplicatedStorage > PetModels` | the pet id, e.g. `Doggy` |
-| A pet's golden version (optional) | `ReplicatedStorage > PetModels` | `Doggy_Golden` (otherwise the normal model is painted gold) |
+| A pet's tier versions (optional) | `ReplicatedStorage > PetModels` | `Doggy_Golden`, `Doggy_Diamond`, `Doggy_Emerald`, `Doggy_Void` (otherwise the normal model is repainted in the tier's colours) |
 | An egg (world stand and hatch animation) | `ReplicatedStorage > EggModels` | the egg id, e.g. `Meadow` |
 
 **If you edit in Studio only:** build the place once, then drag your models into those folders in
@@ -173,11 +173,23 @@ What the game does with your model:
 To add a brand-new pet, add an entry to `Pets.luau`, add it to an egg in `Eggs.luau`, then
 give it a model the same way.
 
+## 🛠 Admin panel
+
+For testing and debugging. It appears as a red **🛠 Admin** button on the right (or press **F2**)
+for admins only: everyone in Studio, the place owner (for group games, members at rank 254+), and
+any user ids added to `Config.Admins.UserIds`. Every command is checked again on the server.
+
+It can give coins, gems and any pet at any tier; set luck level, boosts, areas, rebirths and
+upgrades; make the daily reward, gifts and quests ready; switch game passes on or off for the
+session; teleport between areas; simulate thousands of hatches to check the odds without spending
+anything; show server info (save size, memory, whether data is saving); save now; and reset your
+own data to a new player's (real purchases are kept).
+
 ## Tuning
 
 All the numbers live in data modules, so balancing never means touching gameplay code:
 
-- [`Config.luau`](src/shared/Config.luau): rebirth curve, clovers, luck levels, bonuses, daily rewards, gifts,
+- [`Config.luau`](src/shared/Config.luau): admins, pet tiers, rebirth curve, clovers, luck levels, bonuses, daily rewards, gifts,
   codes, rarities, sounds
 - [`Pets.luau`](src/shared/Pets.luau): every pet (generated looks come from colours and features;
   see above to use real models)

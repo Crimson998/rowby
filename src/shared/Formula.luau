@@ -30,19 +30,24 @@ function Formula.tapPower(level: number): number
 	return 1 + level
 end
 
-function Formula.petPower(petId: string, golden: boolean?): number
+-- A pet's tier (1 = Normal … #Config.Tiers). Missing or invalid tiers count as Normal.
+function Formula.tier(tier: number?): number
+	return math.clamp(math.floor(tonumber(tier) or 1), 1, #Config.Tiers)
+end
+
+function Formula.petPower(petId: string, tier: number?): number
 	local pet = Pets[petId]
 	if not pet then
 		return 0
 	end
-	return pet.Power * (if golden then Config.Pets.GoldenMultiplier else 1)
+	return pet.Power * Config.Tiers[Formula.tier(tier)].Multiplier
 end
 
 function Formula.petBonus(data): number
 	local total = 0
 	for _, pet in data.Pets do
 		if pet.Equipped then
-			total += Formula.petPower(pet.Id, pet.Golden)
+			total += Formula.petPower(pet.Id, pet.Tier)
 		end
 	end
 	return total

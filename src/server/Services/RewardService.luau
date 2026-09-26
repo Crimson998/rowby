@@ -144,6 +144,8 @@ local function redeemCode(player: Player, code): (boolean, string)
 	return true, "Redeemed!  " .. Rewards.describe(reward, data, profile.Session)
 end
 
+RewardService.fillQuests = fillQuests
+
 function RewardService.Init()
 	DataService.onLoaded(fillQuests)
 	DataService.onRelease(function(profile)
