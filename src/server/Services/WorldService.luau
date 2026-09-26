@@ -27,12 +27,105 @@ WorldService.Boards = {} :: { [string]: { TextLabel } }
 local LENGTH = Zones.Layout.Length
 local rgb = Color3.fromRGB
 local eggPosition = MapBuilder.eggPosition
-local textLabel = MapBuilder.textLabel
 
 local worldFolder: Folder
 local orbFolder: Folder
 local orbs: { [number]: { [BasePart]: string } } = {}
 local orbRng = Random.new()
+
+-- A standing clover: an invisible root with bright heart-shaped leaves and a stem welded to it,
+-- so clients can bob and spin the whole clover by moving the root. Lucky clovers are golden
+-- with four leaves and sparkles.
+local CLOVER_LEAF = rgb(45, 235, 95)
+local CLOVER_STEM = rgb(30, 150, 60)
+local LUCKY_LEAF = rgb(255, 205, 40)
+local LUCKY_STEM = rgb(200, 140, 20)
+
+local function cloverPart(
+	root: BasePart,
+	size: Vector3,
+	offset: CFrame,
+	color: Color3,
+	material: Enum.Material,
+	ellipsoid: boolean
+)
+	local part = Instance.new("Part")
+	part.Size = size
+	part.CFrame = root.CFrame * offset
+	part.Color = color
+	part.Material = material
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Massless = true
+	if ellipsoid then
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Parent = part
+	end
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = part
+	weld.Parent = part
+	part.Parent = root
+	return part
+end
+
+local function buildClover(lucky: boolean): Part
+	local scale = if lucky then 1.35 else 1
+	local leafColor = if lucky then LUCKY_LEAF else CLOVER_LEAF
+	local root = Instance.new("Part")
+	root.Name = if lucky then "LuckyClover" else "Clover"
+	root.Size = Vector3.one * 0.4
+	root.Transparency = 1
+	root.Anchored = true
+	root.CanCollide = false
+	root.CanQuery = false
+	root.CanTouch = false
+	root.CastShadow = false
+
+	-- Each leaf is two overlapping ovals, making a heart shape pointing at the centre.
+	local leaves = if lucky then 4 else 3
+	for index = 1, leaves do
+		local angle = math.rad(90 + (index - 1) * 360 / leaves)
+		local direction = CFrame.Angles(0, 0, angle)
+		for side = -1, 1, 2 do
+			cloverPart(
+				root,
+				Vector3.new(0.62, 0.62, 0.16) * scale,
+				direction * CFrame.new(0.45 * scale, side * 0.17 * scale, 0),
+				leafColor,
+				Enum.Material.Neon,
+				true
+			)
+		end
+	end
+	-- Darker centre dot and stem so the leaves read clearly.
+	cloverPart(
+		root,
+		Vector3.new(0.3, 0.3, 0.2) * scale,
+		CFrame.new(),
+		if lucky then LUCKY_STEM else CLOVER_STEM,
+		Enum.Material.SmoothPlastic,
+		true
+	)
+	cloverPart(
+		root,
+		Vector3.new(0.12, 0.9, 0.12) * scale,
+		CFrame.new(0.12 * scale, -0.6 * scale, 0) * CFrame.Angles(0, 0, math.rad(-12)),
+		if lucky then LUCKY_STEM else CLOVER_STEM,
+		Enum.Material.SmoothPlastic,
+		false
+	)
+	if lucky then
+		local sparkles = Instance.new("Sparkles")
+		sparkles.SparkleColor = rgb(255, 235, 120)
+		sparkles.Parent = root
+	end
+	return root
+end
 
 local function spawnOrb(zoneIndex: number)
 	local zoneStart = (zoneIndex - 1) * LENGTH
@@ -46,31 +139,8 @@ local function spawnOrb(zoneIndex: number)
 		end
 	end
 	local lucky = orbRng:NextNumber() < Config.Orbs.LuckyChance
-	local orb = Instance.new("Part")
-	orb.Name = if lucky then "LuckyClover" else "Clover"
-	orb.Shape = Enum.PartType.Ball
-	orb.Anchored = true
-	orb.CanCollide = false
-	orb.CanQuery = false
-	orb.CanTouch = false
-	orb.CastShadow = false
-	orb.Material = Enum.Material.Neon
-	orb.Size = Vector3.one * (if lucky then 1.4 else 1)
-	orb.Color = if lucky then rgb(255, 215, 60) else rgb(60, 220, 90)
-	orb.Transparency = 0.3
+	local orb = buildClover(lucky)
 	orb.CFrame = CFrame.new(position)
-
-	local icon = Instance.new("BillboardGui")
-	icon.Size = UDim2.fromScale(if lucky then 4 else 2.8, if lucky then 4 else 2.8)
-	icon.MaxDistance = 120
-	icon.LightInfluence = 0
-	icon.Parent = orb
-	textLabel({ Size = UDim2.fromScale(1, 1), Text = "🍀", TextStrokeTransparency = 1, Parent = icon })
-	if lucky then
-		local sparkles = Instance.new("Sparkles")
-		sparkles.SparkleColor = rgb(255, 230, 90)
-		sparkles.Parent = orb
-	end
 
 	orb:SetAttribute("Zone", zoneIndex)
 	orb.Parent = orbFolder
