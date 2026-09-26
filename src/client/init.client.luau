@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Client entry point: shows a loading screen until the profile arrives, then builds the UI
 	and starts the controllers.

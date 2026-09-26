@@ -31,6 +31,9 @@ export type Profile = {
 
 local DATA_VERSION = 2
 
+-- The largest coin/gem total we store. Far beyond normal play, but finite so it can always save.
+DataService.MAX_NUMBER = 1e300
+
 local TEMPLATE = {
 	Version = DATA_VERSION,
 	Coins = 0,
@@ -160,7 +163,6 @@ local function newSession(player: Player)
 		JoinedAt = workspace:GetServerTimeNow(),
 		GiftsClaimed = table.create(#Config.Gifts, false),
 		AutoTap = false,
-		IsStudio = RunService:IsStudio(),
 	}
 end
 
@@ -303,8 +305,6 @@ function DataService.onRelease(handler: (Profile) -> ())
 	table.insert(releaseHandlers, handler)
 end
 
--- Marks keys for replication: DataService.change(profile, "Coins", "Stats") or
--- DataService.change(profile, "Session.Passes").
 -- Sends the whole profile again (after large changes such as an admin data reset).
 function DataService.resync(profile: Profile)
 	table.clear(profile.Dirty.Data)
@@ -323,6 +323,8 @@ function DataService.reset(profile: Profile)
 	DataService.resync(profile)
 end
 
+-- Marks keys for replication: DataService.change(profile, "Coins", "Stats") or
+-- DataService.change(profile, "Session.Passes").
 function DataService.change(profile: Profile, ...: string)
 	for _, key in { ... } do
 		local section, name = string.match(key, "^(%a+)%.(.+)$")
@@ -343,9 +345,10 @@ function DataService.addCoins(profile: Profile, amount: number, earned: boolean)
 		return
 	end
 	local data = profile.Data
-	data.Coins += amount
+	-- Infinity can't be saved, so totals stop at MAX_NUMBER instead of breaking saves.
+	data.Coins = math.min(data.Coins + amount, DataService.MAX_NUMBER)
 	if earned then
-		data.Stats.CoinsEarned += amount
+		data.Stats.CoinsEarned = math.min(data.Stats.CoinsEarned + amount, DataService.MAX_NUMBER)
 		DataService.change(profile, "Stats")
 	end
 	DataService.change(profile, "Coins")
@@ -355,7 +358,7 @@ function DataService.addGems(profile: Profile, amount: number)
 	if amount <= 0 then
 		return
 	end
-	profile.Data.Gems += math.floor(amount)
+	profile.Data.Gems = math.min(profile.Data.Gems + math.floor(amount), DataService.MAX_NUMBER)
 	DataService.change(profile, "Gems")
 end
 

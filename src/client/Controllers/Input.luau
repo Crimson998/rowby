@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Tapping: the TAP button, a left click anywhere in the world, or R2 on a gamepad.
 	The client shows the predicted coins instantly; the server grants the real amount.

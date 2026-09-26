@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Friend bonus: +10% coins for every friend in the server (capped), which makes inviting
 	friends worth it and keeps groups playing together.

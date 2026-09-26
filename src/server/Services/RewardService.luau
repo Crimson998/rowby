@@ -123,6 +123,9 @@ local function redeemCode(player: Player, code): (boolean, string)
 	if not profile or type(code) ~= "string" then
 		return false, "Try again in a moment."
 	end
+	if #code > 40 then
+		return false, "That code doesn't exist."
+	end
 	local now = os.clock()
 	if now - (lastCodeAttempt[player] or 0) < 1 then
 		return false, "Slow down!"

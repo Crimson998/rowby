@@ -34,6 +34,8 @@ local BOARDS = {
 }
 
 local nameCache: { [number]: string } = {}
+-- Last value written per board and player, so unchanged scores don't use DataStore budget.
+local written: { [string]: { [number]: number } } = {}
 
 local function nameFor(userId: number): string
 	if nameCache[userId] then
@@ -68,10 +70,19 @@ local function refreshBoards()
 		if not ok then
 			continue
 		end
+		written[board.Store] = written[board.Store] or {}
+		local last = written[board.Store]
 		for _, profile in DataService.list() do
-			pcall(function()
-				store:SetAsync(tostring(profile.Player.UserId), math.floor(board.Value(profile.Data)))
-			end)
+			local userId = profile.Player.UserId
+			local value = math.floor(board.Value(profile.Data))
+			if last[userId] ~= value then
+				local saved = pcall(function()
+					store:SetAsync(tostring(userId), value)
+				end)
+				if saved then
+					last[userId] = value
+				end
+			end
 		end
 		local pageOk, page = pcall(function()
 			return store:GetSortedAsync(false, 10):GetCurrentPage()
@@ -97,6 +108,11 @@ end
 
 function LeaderboardService.Init()
 	DataService.onLoaded(createLeaderstats)
+	DataService.onRelease(function(profile)
+		for _, values in written do
+			values[profile.Player.UserId] = nil
+		end
+	end)
 end
 
 function LeaderboardService.Start()

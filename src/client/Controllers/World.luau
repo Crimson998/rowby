@@ -223,9 +223,17 @@ local function trackOrb(orb: Instance)
 	end)
 end
 
+-- Clovers farther than this from the camera aren't animated (you can't see the motion anyway).
+local ANIMATE_DISTANCE = 160
+
 local function animateOrbs()
 	local now = os.clock()
+	local camera = workspace.CurrentCamera
+	local cameraPosition = if camera then camera.CFrame.Position else Vector3.zero
 	for orb, info in orbBases do
+		if (info.CFrame.Position - cameraPosition).Magnitude > ANIMATE_DISTANCE then
+			continue
+		end
 		orb:PivotTo(
 			info.CFrame * CFrame.new(0, math.sin(now * 2.5 + info.Phase) * 0.35, 0) * CFrame.Angles(0, now * 2, 0)
 		)
@@ -431,23 +439,35 @@ function World.start()
 		end
 	end)
 
+	-- Each egg's resting pivot, recorded once so the egg can float and spin around it.
+	local eggBases: { [Model]: CFrame } = {}
+	local function trackEgg(stand: Instance)
+		task.spawn(function()
+			local eggModel = stand:WaitForChild("Egg", 30) :: Model?
+			if not eggModel then
+				return
+			end
+			while not eggModel.PrimaryPart and eggModel.Parent do
+				eggModel:GetPropertyChangedSignal("PrimaryPart"):Wait()
+			end
+			eggBases[eggModel] = eggModel:GetPivot()
+			eggModel.Destroying:Connect(function()
+				eggBases[eggModel] = nil
+			end)
+		end)
+	end
+	for _, stand in CollectionService:GetTagged("EggStand") do
+		trackEgg(stand)
+	end
+	CollectionService:GetInstanceAddedSignal("EggStand"):Connect(trackEgg)
+
 	local eggSpin = 0
 	RunService.RenderStepped:Connect(function(dt)
 		animateOrbs()
 		eggSpin += dt * 0.6
-		for _, stand in CollectionService:GetTagged("EggStand") do
-			local eggModel = stand:FindFirstChild("Egg") :: Model?
-			local shell = eggModel and eggModel.PrimaryPart
-			if eggModel and shell then
-				local base = eggModel:GetAttribute("BaseCFrame") :: CFrame?
-				if not base then
-					base = eggModel:GetPivot()
-					eggModel:SetAttribute("BaseCFrame", base)
-				end
-				eggModel:PivotTo(
-					(base :: CFrame) * CFrame.new(0, math.sin(eggSpin * 2) * 0.4, 0) * CFrame.Angles(0, eggSpin, 0)
-				)
-			end
+		local float = CFrame.new(0, math.sin(eggSpin * 2) * 0.4, 0) * CFrame.Angles(0, eggSpin, 0)
+		for eggModel, base in eggBases do
+			eggModel:PivotTo(base * float)
 		end
 	end)
 end

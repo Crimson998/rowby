@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Quests track a lifetime stat from a starting point, so progress needs no extra hooks:
 	progress = Stats[Stat] - Start. Goals scale with how many quests the player has finished.

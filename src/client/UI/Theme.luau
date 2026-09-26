@@ -1,3 +1,4 @@
+--!strict
 local rgb = Color3.fromRGB
 
 return {

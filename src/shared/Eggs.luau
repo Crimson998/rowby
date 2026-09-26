@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Eggs, in zone order. Weights are relative; the odds shown to players are computed from these
 	(with their luck applied) by Formula.eggOdds, so the displayed odds are always the real odds.

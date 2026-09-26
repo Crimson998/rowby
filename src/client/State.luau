@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Client copy of the player's profile, kept in sync by the server's Sync remote.
 	Data keys are watched by name ("Coins"); session keys with a prefix ("Session.Passes").

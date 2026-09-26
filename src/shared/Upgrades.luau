@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Permanent upgrades. Coin upgrades are the moment-to-moment sink; gem upgrades are the
 	long-term sink fed by rebirths, dailies, quests and gifts. Costs grow by Growth per level

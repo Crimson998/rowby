@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Robux catalog. Create each pass/product on the Creator Dashboard
 	(Monetization → Passes / Developer Products), then paste its id into Id here.

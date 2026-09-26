@@ -1,3 +1,4 @@
+--!strict
 --[[
 	ViewportFrame helpers for showing pets and eggs in the UI.
 ]]

@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Renders every player's equipped pets hopping along behind them. Pets are local models built
 	from each player's "EquippedPets" attribute, so they cost the server nothing.

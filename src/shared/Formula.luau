@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Every game-rule calculation, shared so the client can preview exactly what the server grants.
 	`data` is the saved profile; `session` holds per-server state (passes, premium, friend bonus).

@@ -148,7 +148,8 @@ local function setupCharacter(profile)
 			end
 		end)
 	end)
-	player:LoadCharacter()
+	-- Spawned so later join steps (quests, leaderstats) don't wait for the character to load.
+	task.spawn(player.LoadCharacter, player)
 end
 
 function EconomyService.Init()

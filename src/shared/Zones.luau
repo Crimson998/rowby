@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Areas laid end to end along +Z. Unlocking an area permanently raises the tap multiplier to
 	that area's TapMultiplier and opens its egg and clovers. Visual theme values are read by the

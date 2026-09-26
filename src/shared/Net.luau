@@ -1,3 +1,4 @@
+--!strict
 --[[
 	Remote registry. The server creates every remote up front; clients wait for them.
 

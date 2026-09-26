@@ -1,3 +1,4 @@
+--!strict
 local Format = {}
 
 local SUFFIXES = { "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc" }

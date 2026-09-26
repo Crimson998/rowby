@@ -73,7 +73,7 @@ COMMANDS.AddCoins = function(profile, value)
 	if not add then
 		return false, "Enter a number."
 	end
-	profile.Data.Coins = math.max(0, profile.Data.Coins + add)
+	profile.Data.Coins = math.clamp(profile.Data.Coins + add, 0, DataService.MAX_NUMBER)
 	DataService.change(profile, "Coins")
 	return true, "Coins: " .. Format.number(profile.Data.Coins)
 end
@@ -83,7 +83,7 @@ COMMANDS.AddGems = function(profile, value)
 	if not add then
 		return false, "Enter a number."
 	end
-	profile.Data.Gems = math.max(0, math.floor(profile.Data.Gems + add))
+	profile.Data.Gems = math.clamp(math.floor(profile.Data.Gems + add), 0, DataService.MAX_NUMBER)
 	DataService.change(profile, "Gems")
 	return true, "Gems: " .. Format.number(profile.Data.Gems)
 end
@@ -290,7 +290,10 @@ COMMANDS.ServerInfo = function(profile)
 		"Place version: " .. game.PlaceVersion .. "   Studio: " .. tostring(RunService:IsStudio()),
 		"DataStore: " .. (if DataService.isMock() then "in-memory (Studio, not saving)" else "live, saving"),
 		"Your save size: " .. (if ok then Format.commas(#encoded) .. " bytes (limit 4,194,304)" else "?"),
-		"Server memory: " .. math.floor(Stats:GetTotalMemoryUsageMb()) .. " MB",
+		"Server memory: "
+			.. math.floor(Stats:GetTotalMemoryUsageMb())
+			.. " MB   Robux you've spent: "
+			.. Format.commas(profile.Data.Stats.RobuxSpent),
 		"Pets owned: "
 			.. Formula.petCount(profile.Data)
 			.. "/"
