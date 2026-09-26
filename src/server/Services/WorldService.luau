@@ -73,7 +73,9 @@ local function cloverPart(
 	return part
 end
 
-local function buildClover(lucky: boolean): Part
+-- Builds the whole clover at `cframe`. The root must be in place before the leaves are made,
+-- because each weld keeps a leaf where it was relative to the root when it was created.
+local function buildClover(lucky: boolean, cframe: CFrame): Part
 	local scale = if lucky then 1.35 else 1
 	local leafColor = if lucky then LUCKY_LEAF else CLOVER_LEAF
 	local root = Instance.new("Part")
@@ -85,6 +87,7 @@ local function buildClover(lucky: boolean): Part
 	root.CanQuery = false
 	root.CanTouch = false
 	root.CastShadow = false
+	root.CFrame = cframe
 
 	-- Each leaf is two overlapping ovals, making a heart shape pointing at the centre.
 	local leaves = if lucky then 4 else 3
@@ -139,8 +142,7 @@ local function spawnOrb(zoneIndex: number)
 		end
 	end
 	local lucky = orbRng:NextNumber() < Config.Orbs.LuckyChance
-	local orb = buildClover(lucky)
-	orb.CFrame = CFrame.new(position)
+	local orb = buildClover(lucky, CFrame.new(position))
 
 	orb:SetAttribute("Zone", zoneIndex)
 	orb.Parent = orbFolder
