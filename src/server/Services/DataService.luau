@@ -81,6 +81,7 @@ local TEMPLATE = {
 		-- Equip your strongest pets automatically after hatching or crafting.
 		AutoEquip = true,
 		Sounds = true,
+		Music = true,
 		ShowOtherPets = true,
 		-- Hatched pets of these rarities are deleted right away (new discoveries are always kept).
 		AutoDelete = { Common = false, Uncommon = false, Rare = false, Epic = false },

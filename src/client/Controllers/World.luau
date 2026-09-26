@@ -21,6 +21,7 @@ local Formula = require(Shared.Formula)
 local Pets = require(Shared.Pets)
 local Zones = require(Shared.Zones)
 
+local Music = require(script.Parent.Music)
 local Sound = require(script.Parent.Parent.Sound)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Parent.UI.Theme)
@@ -178,6 +179,7 @@ local function applyZone(index: number, instant: boolean)
 			Density = zone.AtmosphereDensity,
 		}, Enum.EasingStyle.Sine)
 	end
+	Music.setArea(zone.Theme)
 	if not instant then
 		Notifications.banner(zone.Icon .. " " .. zone.Name, zone.Accent, 2.2)
 	end

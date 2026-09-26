@@ -1,5 +1,5 @@
 --[[
-	⚙️ Settings: hatch animation, auto-equip, auto-delete by rarity, sounds and other players'
+	⚙️ Settings: hatch animation, auto-equip, auto-delete by rarity, music, sounds and other players'
 	pets. Saved on the server with the rest of your data.
 ]]
 
@@ -135,6 +135,7 @@ function SettingsWindow.build()
 		end)
 	end
 
+	toggle("Music", nil, "Music")
 	toggle("Sound effects", nil, "Sounds")
 	toggle("Show other players' pets", "Turn off if the game feels slow", "ShowOtherPets")
 

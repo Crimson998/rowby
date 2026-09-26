@@ -173,6 +173,22 @@ What the game does with your model:
 To add a brand-new pet, add an entry to `Pets.luau`, add it to an egg in `Eggs.luau`, then
 give it a model the same way.
 
+## 🎵 Music
+
+Music is off until you give it a track:
+
+1. In Studio, open **View → Asset Manager**, click **Import** (the upload icon) and pick your
+   .mp3 or .ogg. Or upload it on the Creator Dashboard under **Development Items → Audio**.
+2. Right-click the uploaded audio → **Copy Asset ID**.
+3. In `src/shared/Config.luau`, set `Config.Music.Default = "rbxassetid://<id>"`.
+
+That track then loops everywhere. To give an area its own track, fill in its entry under
+`Config.Music.Areas` (Meadow, Candy, Frost, Lava, Cosmic); walking between areas crossfades.
+Players can turn music off in ⚙️ Settings. Volume and fade time are in `Config.Music` too.
+
+Audio you upload is private to your account, so it plays in your own games. If it stays silent,
+check the Output window for a permission message and allow the audio for this experience.
+
 ## 🛠 Admin panel
 
 For testing and debugging. It appears as a red **🛠 Admin** button on the right (or press **F2**)

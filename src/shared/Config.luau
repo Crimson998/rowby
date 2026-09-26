@@ -184,6 +184,25 @@ Config.Rarities = {
 	Secret = { Color = Color3.fromRGB(0, 255, 225), Lucky = true, DiscoveryGems = 150, Announce = true },
 }
 
+--[[
+	Background music. Upload an .mp3 or .ogg in Studio (View → Asset Manager → Import, or the
+	Creator Dashboard), copy its id and paste it here as "rbxassetid://<id>".
+	Default plays everywhere; an entry in Areas (keyed by the area's Theme from Zones.luau)
+	replaces it in that area. Leave a value "" for no music. Tracks loop, so short ones are fine.
+]]
+Config.Music = {
+	Volume = 0.3,
+	FadeSeconds = 1.5,
+	Default = "",
+	Areas = {
+		Meadow = "",
+		Candy = "",
+		Frost = "",
+		Lava = "",
+		Cosmic = "",
+	},
+}
+
 -- Built-in engine sounds so the place works without uploading audio. Swap for your own asset ids.
 Config.Sounds = {
 	Tap = "rbxasset://sounds/clickfast.wav",
