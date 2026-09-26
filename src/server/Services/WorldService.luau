@@ -30,11 +30,12 @@ local eggPosition = MapBuilder.eggPosition
 
 local worldFolder: Folder
 local orbFolder: Folder
-local orbs: { [number]: { [BasePart]: string } } = {}
+type Clover = { Kind: string, Position: Vector3 }
+local orbs: { [number]: { [Model]: Clover } } = {}
 local orbRng = Random.new()
 
--- A standing clover: an invisible root with bright heart-shaped leaves and a stem welded to it,
--- so clients can bob and spin the whole clover by moving the root. Lucky clovers are golden
+-- A standing clover: bright heart-shaped leaves, a darker centre and a stem, all anchored in one
+-- Model (no welds). Clients bob and spin the whole model with PivotTo. Lucky clovers are golden
 -- with four leaves and sparkles.
 local CLOVER_LEAF = rgb(45, 235, 95)
 local CLOVER_STEM = rgb(30, 150, 60)
@@ -42,61 +43,48 @@ local LUCKY_LEAF = rgb(255, 205, 40)
 local LUCKY_STEM = rgb(200, 140, 20)
 
 local function cloverPart(
-	root: BasePart,
+	model: Model,
+	origin: CFrame,
 	size: Vector3,
 	offset: CFrame,
 	color: Color3,
 	material: Enum.Material,
 	ellipsoid: boolean
-)
+): Part
 	local part = Instance.new("Part")
 	part.Size = size
-	part.CFrame = root.CFrame * offset
+	part.CFrame = origin * offset
 	part.Color = color
 	part.Material = material
-	part.Anchored = false
+	part.Anchored = true
 	part.CanCollide = false
 	part.CanQuery = false
 	part.CanTouch = false
 	part.CastShadow = false
-	part.Massless = true
 	if ellipsoid then
 		local mesh = Instance.new("SpecialMesh")
 		mesh.MeshType = Enum.MeshType.Sphere
 		mesh.Parent = part
 	end
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
-	weld.Part1 = part
-	weld.Parent = part
-	part.Parent = root
+	part.Parent = model
 	return part
 end
 
--- Builds the whole clover at `cframe`. The root must be in place before the leaves are made,
--- because each weld keeps a leaf where it was relative to the root when it was created.
-local function buildClover(lucky: boolean, cframe: CFrame): Part
+local function buildClover(lucky: boolean, origin: CFrame): Model
 	local scale = if lucky then 1.35 else 1
 	local leafColor = if lucky then LUCKY_LEAF else CLOVER_LEAF
-	local root = Instance.new("Part")
-	root.Name = if lucky then "LuckyClover" else "Clover"
-	root.Size = Vector3.one * 0.4
-	root.Transparency = 1
-	root.Anchored = true
-	root.CanCollide = false
-	root.CanQuery = false
-	root.CanTouch = false
-	root.CastShadow = false
-	root.CFrame = cframe
+	local stemColor = if lucky then LUCKY_STEM else CLOVER_STEM
+	local model = Instance.new("Model")
+	model.Name = if lucky then "LuckyClover" else "Clover"
 
 	-- Each leaf is two overlapping ovals, making a heart shape pointing at the centre.
 	local leaves = if lucky then 4 else 3
 	for index = 1, leaves do
-		local angle = math.rad(90 + (index - 1) * 360 / leaves)
-		local direction = CFrame.Angles(0, 0, angle)
+		local direction = CFrame.Angles(0, 0, math.rad(90 + (index - 1) * 360 / leaves))
 		for side = -1, 1, 2 do
 			cloverPart(
-				root,
+				model,
+				origin,
 				Vector3.new(0.62, 0.62, 0.16) * scale,
 				direction * CFrame.new(0.45 * scale, side * 0.17 * scale, 0),
 				leafColor,
@@ -105,29 +93,33 @@ local function buildClover(lucky: boolean, cframe: CFrame): Part
 			)
 		end
 	end
-	-- Darker centre dot and stem so the leaves read clearly.
-	cloverPart(
-		root,
+	local centre = cloverPart(
+		model,
+		origin,
 		Vector3.new(0.3, 0.3, 0.2) * scale,
 		CFrame.new(),
-		if lucky then LUCKY_STEM else CLOVER_STEM,
+		stemColor,
 		Enum.Material.SmoothPlastic,
 		true
 	)
 	cloverPart(
-		root,
+		model,
+		origin,
 		Vector3.new(0.12, 0.9, 0.12) * scale,
 		CFrame.new(0.12 * scale, -0.6 * scale, 0) * CFrame.Angles(0, 0, math.rad(-12)),
-		if lucky then LUCKY_STEM else CLOVER_STEM,
+		stemColor,
 		Enum.Material.SmoothPlastic,
 		false
 	)
 	if lucky then
 		local sparkles = Instance.new("Sparkles")
 		sparkles.SparkleColor = rgb(255, 235, 120)
-		sparkles.Parent = root
+		sparkles.Parent = centre
 	end
-	return root
+	model.WorldPivot = origin
+	-- Lets clients wait until every part has arrived before animating.
+	model:SetAttribute("PartCount", #model:GetChildren())
+	return model
 end
 
 local function spawnOrb(zoneIndex: number)
@@ -146,13 +138,14 @@ local function spawnOrb(zoneIndex: number)
 
 	orb:SetAttribute("Zone", zoneIndex)
 	orb.Parent = orbFolder
-	orbs[zoneIndex][orb] = if lucky then "LuckyClover" else "Clover"
+	orbs[zoneIndex][orb] = { Kind = if lucky then "LuckyClover" else "Clover", Position = position }
 end
 
 -- Clovers give Luck XP (never coins; coins come only from tapping).
-local function collectOrb(profile, orb: BasePart, kind: string, zoneIndex: number)
+local function collectOrb(profile, orb: Model, clover: Clover, zoneIndex: number)
 	orbs[zoneIndex][orb] = nil
-	local position = orb.Position
+	local position = clover.Position
+	local kind = clover.Kind
 	orb:Destroy()
 
 	local data = profile.Data
@@ -247,9 +240,9 @@ function WorldService.Start()
 					continue
 				end
 				local radius = Formula.magnetRadius(profile.Data)
-				for orb, kind in orbs[zoneIndex] do
-					if (orb.Position - position).Magnitude <= radius then
-						collectOrb(profile, orb, kind, zoneIndex)
+				for orb, clover in orbs[zoneIndex] do
+					if (clover.Position - position).Magnitude <= radius then
+						collectOrb(profile, orb, clover, zoneIndex)
 					end
 				end
 			end

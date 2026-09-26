@@ -200,23 +200,35 @@ end
 
 -- Orbs -------------------------------------------------------------------------------------
 
-local orbBases: { [BasePart]: { CFrame: CFrame, Phase: number } } = {}
+local orbBases: { [Model]: { CFrame: CFrame, Phase: number } } = {}
 
+-- Clovers are Models of anchored parts; wait until every part has arrived, then remember
+-- where the clover stands so it can bob and spin around that spot.
 local function trackOrb(orb: Instance)
-	if orb:IsA("BasePart") then
-		orbBases[orb] = { CFrame = orb.CFrame, Phase = math.random() * math.pi * 2 }
-		orb.Destroying:Connect(function()
-			orbBases[orb] = nil
-		end)
+	if not orb:IsA("Model") then
+		return
 	end
+	task.spawn(function()
+		local expected = orb:GetAttribute("PartCount")
+		local deadline = os.clock() + 5
+		while orb.Parent and type(expected) == "number" and #orb:GetChildren() < expected and os.clock() < deadline do
+			task.wait()
+		end
+		if orb.Parent then
+			orbBases[orb] = { CFrame = orb:GetPivot(), Phase = math.random() * math.pi * 2 }
+		end
+	end)
+	orb.Destroying:Connect(function()
+		orbBases[orb] = nil
+	end)
 end
 
 local function animateOrbs()
 	local now = os.clock()
 	for orb, info in orbBases do
-		orb.CFrame = info.CFrame
-			* CFrame.new(0, math.sin(now * 2.5 + info.Phase) * 0.35, 0)
-			* CFrame.Angles(0, now * 2, 0)
+		orb:PivotTo(
+			info.CFrame * CFrame.new(0, math.sin(now * 2.5 + info.Phase) * 0.35, 0) * CFrame.Angles(0, now * 2, 0)
+		)
 	end
 end
 
