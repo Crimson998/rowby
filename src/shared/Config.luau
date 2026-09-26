@@ -25,11 +25,13 @@ Config.Tap = {
 
 Config.Pets = {
 	BaseEquipSlots = 3,
-	Storage = 80,
+	Storage = 150,
 	GoldenCopies = 5,
 	GoldenMultiplier = 3,
 	HatchCooldown = 1.3,
 	HatchRange = 20,
+	-- Rarities players may auto-delete on hatch (Settings). Rarer pets are always kept.
+	AutoDeletable = { "Common", "Uncommon", "Rare", "Epic" },
 }
 
 Config.Rebirth = {

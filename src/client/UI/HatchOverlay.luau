@@ -1,6 +1,7 @@
 --[[
 	Full-screen egg hatch: the egg wobbles harder and harder, flashes, then reveals the pet with
 	its rarity. Click to skip. A new hatch while one is playing replaces it immediately.
+	Settings.HatchAnimation picks "Full", "Fast" (no wobble, short reveal) or "Off" (a toast).
 ]]
 
 local Players = game:GetService("Players")
@@ -15,6 +16,8 @@ local Pets = require(Shared.Pets)
 
 local PetModels = require(script.Parent.Parent.PetModels)
 local Sound = require(script.Parent.Parent.Sound)
+local State = require(script.Parent.Parent.State)
+local Notifications = require(script.Parent.Notifications)
 local Viewport = require(script.Parent.Parent.Viewport)
 local Theme = require(script.Parent.Theme)
 local Util = require(script.Parent.Util)
@@ -23,6 +26,9 @@ local HatchOverlay = {}
 
 local SHAKE_TIME = 1.2
 local HOLD_TIME = 2.2
+local FAST_HOLD_TIME = 0.9
+
+type Result = { Id: string, Uid: string?, New: boolean, Deleted: boolean? }
 
 local gui: ScreenGui
 local container: Frame
@@ -67,7 +73,38 @@ function HatchOverlay.build()
 	})
 end
 
-function HatchOverlay.play(eggId: string, results: { { Id: string, Uid: string, New: boolean } })
+function HatchOverlay.isPlaying(): boolean
+	return gui ~= nil and gui.Enabled
+end
+
+-- "Off" mode: one toast instead of the overlay.
+local function toast(results: { Result })
+	local names = {}
+	local deleted = 0
+	local best = 1
+	for _, result in results do
+		local pet = Pets[result.Id]
+		best = math.max(best, table.find(Config.RarityOrder, pet.Rarity) or 1)
+		if result.Deleted then
+			deleted += 1
+		else
+			table.insert(names, (if result.New then "NEW " else "") .. pet.Name)
+		end
+	end
+	local text = "🥚 " .. (if #names > 0 then table.concat(names, ", ") else "")
+	if deleted > 0 then
+		text ..= (if #names > 0 then "  " else "") .. "🗑 " .. deleted .. " auto-deleted"
+	end
+	Notifications.show(text, if best >= 4 then "Reward" else "Info")
+	Sound.play("Hatch", 1.2, 0.35)
+end
+
+function HatchOverlay.play(eggId: string, results: { Result })
+	local mode = State.Data.Settings and State.Data.Settings.HatchAnimation or "Full"
+	if mode == "Off" then
+		toast(results)
+		return
+	end
 	token += 1
 	local myToken = token
 	skip = false
@@ -107,9 +144,9 @@ function HatchOverlay.play(eggId: string, results: { { Id: string, Uid: string, 
 	end
 
 	Sound.play("Hatch", 1, 0.6)
-	-- Wobble
+	-- Wobble (skipped in Fast mode)
 	local start = os.clock()
-	while os.clock() - start < SHAKE_TIME do
+	while mode == "Full" and os.clock() - start < SHAKE_TIME do
 		if skip or token ~= myToken then
 			break
 		end
@@ -138,6 +175,11 @@ function HatchOverlay.play(eggId: string, results: { { Id: string, Uid: string, 
 		slot.Name.Text = pet.Name
 		slot.Rarity.Text = pet.Rarity .. "  ·  +" .. Format.number(Formula.petPower(slot.Result.Id, false)) .. "x"
 		slot.Rarity.TextColor3 = rarity.Color
+		if slot.Result.Deleted then
+			slot.Rarity.Text = "🗑 Auto-deleted"
+			slot.Rarity.TextColor3 = Theme.Colors.SubText
+			slot.Viewport.ImageTransparency = 0.6
+		end
 		slot.Badge.Visible = slot.Result.New
 		best = math.max(best, table.find(Config.RarityOrder, pet.Rarity) or 1)
 	end
@@ -145,7 +187,8 @@ function HatchOverlay.play(eggId: string, results: { { Id: string, Uid: string, 
 
 	skip = false
 	local revealStart = os.clock()
-	while os.clock() - revealStart < HOLD_TIME do
+	local hold = if mode == "Fast" then FAST_HOLD_TIME else HOLD_TIME
+	while os.clock() - revealStart < hold do
 		if skip or token ~= myToken then
 			break
 		end

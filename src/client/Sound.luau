@@ -3,6 +3,8 @@ local SoundService = game:GetService("SoundService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared").Config)
 
+local State = require(script.Parent.State)
+
 local Sound = {}
 
 local POOL_SIZE = 5
@@ -10,7 +12,8 @@ local pools: { [string]: { Index: number, Sounds: { Sound } } } = {}
 
 function Sound.play(name: string, pitch: number?, volume: number?)
 	local id = Config.Sounds[name]
-	if not id then
+	local settings = State.Data.Settings
+	if not id or (settings and settings.Sounds == false) then
 		return
 	end
 	local pool = pools[name]

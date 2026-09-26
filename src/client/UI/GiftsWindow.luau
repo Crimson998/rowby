@@ -18,11 +18,22 @@ local NAME = "Gifts"
 function GiftsWindow.build()
 	local body = Windows.create(NAME, "🎁 Free Gifts", Theme.Colors.Gold, Vector2.new(640, 420))
 	Util.label({
-		Size = UDim2.new(1, 0, 0, 24),
+		Size = UDim2.new(1, -160, 0, 24),
 		Text = "Gifts unlock the longer you play. Open them all to start a new round!",
 		TextColor3 = Theme.Colors.SubText,
+		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = body,
 	})
+	local openAll = Util.button({
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, -4),
+		Size = UDim2.fromOffset(150, 32),
+		Text = "Open all ready",
+		Color = Theme.Colors.Green,
+		Parent = body,
+	}, function()
+		Actions("ClaimAllGifts")
+	end)
 	local grid = Util.new("Frame", {
 		Position = UDim2.fromOffset(0, 34),
 		Size = UDim2.new(1, 0, 1, -34),
@@ -67,6 +78,7 @@ function GiftsWindow.build()
 	local function refresh()
 		local session = State.Session
 		local elapsed = workspace:GetServerTimeNow() - session.JoinedAt
+		local anyReady = false
 		for index, tile in tiles do
 			tile.Reward.Text = Rewards.describe(tile.Gift.Reward, State.Data, session)
 			local remaining = tile.Gift.Minutes * 60 - elapsed
@@ -74,6 +86,7 @@ function GiftsWindow.build()
 				tile.Button.Text = "✓ Opened"
 				tile.Button.BackgroundColor3 = Theme.Colors.Disabled
 			elseif remaining <= 0 then
+				anyReady = true
 				tile.Button.Text = "Open!"
 				tile.Button.BackgroundColor3 = Theme.Colors.Green
 			else
@@ -81,6 +94,7 @@ function GiftsWindow.build()
 				tile.Button.BackgroundColor3 = Theme.Colors.PanelLight
 			end
 		end
+		openAll.BackgroundColor3 = if anyReady then Theme.Colors.Green else Theme.Colors.Disabled
 	end
 
 	State.watch({ "Session.GiftsClaimed", "Session.JoinedAt" }, refresh)

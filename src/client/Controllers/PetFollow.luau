@@ -12,6 +12,7 @@ local Config = require(Shared.Config)
 local Pets = require(Shared.Pets)
 
 local PetModels = require(script.Parent.Parent.PetModels)
+local State = require(script.Parent.Parent.State)
 
 local PetFollow = {}
 
@@ -64,7 +65,9 @@ local function update(dt: number)
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local key = player:GetAttribute("EquippedPets")
-		if not root or type(key) ~= "string" or key == "" then
+		local settings = State.Data.Settings
+		local hidden = player ~= Players.LocalPlayer and settings ~= nil and settings.ShowOtherPets == false
+		if hidden or not root or type(key) ~= "string" or key == "" then
 			clear(player)
 			continue
 		end

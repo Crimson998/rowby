@@ -1,5 +1,5 @@
 --[[
-	Hatching, inventory, equipping, golden crafting and the pet index.
+	Hatching, inventory, equipping, locking, golden crafting, bulk clean-up and the pet index.
 ]]
 
 local Players = game:GetService("Players")
@@ -19,6 +19,8 @@ local DataService = require(script.Parent.DataService)
 local WorldService = require(script.Parent.WorldService)
 
 local PetService = {}
+
+local MAX_BATCH = 200
 
 local rng = Random.new()
 local hatchedRemote = Net.event("Hatched")
@@ -51,6 +53,11 @@ local function equippedCount(data): number
 	return count
 end
 
+-- Legendary-and-up pets are never removed by bulk tools, only one at a time on purpose.
+local function isPrecious(pet): boolean
+	return Config.Rarities[Pets[pet.Id].Rarity].Announce == true
+end
+
 function PetService.equipBest(profile)
 	local data = profile.Data
 	local slots = Formula.equipSlots(data, profile.Session)
@@ -71,6 +78,17 @@ function PetService.equipBest(profile)
 	refreshAttribute(profile)
 end
 
+-- After the inventory changes: re-pick the best team if the player wants that, otherwise just
+-- make sure the equipped pets on display are correct.
+local function afterInventoryChange(profile)
+	if profile.Data.Settings.AutoEquip then
+		PetService.equipBest(profile)
+	else
+		DataService.change(profile, "Pets")
+		refreshAttribute(profile)
+	end
+end
+
 -- Adds a pet and returns its uid and whether it was a new index discovery.
 function PetService.givePet(profile, petId: string, golden: boolean?): (string, boolean)
 	local data = profile.Data
@@ -88,6 +106,24 @@ function PetService.givePet(profile, petId: string, golden: boolean?): (string, 
 	end
 	DataService.change(profile, "Pets")
 	return uid, discovered
+end
+
+local function announce(player: Player, petId: string, odds: Formula.Odds)
+	local pet = Pets[petId]
+	local rarity = Config.Rarities[pet.Rarity]
+	if not rarity.Announce then
+		return
+	end
+	local chance = 0
+	for _, entry in odds do
+		if entry.Id == petId then
+			chance = entry.Chance
+		end
+	end
+	announceRemote:FireAllClients(
+		string.format("%s hatched a %s %s! (%s)", player.DisplayName, pet.Rarity, pet.Name, Format.chance(chance)),
+		rarity.Color
+	)
 end
 
 local function hatch(profile, eggId, count)
@@ -117,49 +153,49 @@ local function hatch(profile, eggId, count)
 	if not root or not eggPosition or (root.Position - eggPosition).Magnitude > Config.Pets.HatchRange then
 		return
 	end
-	if Formula.petCount(data) + count > Config.Pets.Storage then
-		DataService.notify(player, "Pet storage is full! Delete or combine some pets.", "Error")
-		return
-	end
 	local cost = egg.Price * count
 	if data.Coins < cost then
 		DataService.notify(player, "You need 🪙 " .. Format.number(cost - data.Coins) .. " more!", "Error")
 		return
 	end
 
-	session.LastHatch = now
-	data.Coins -= cost
+	-- Roll first so pets that will be auto-deleted don't need storage room.
 	local luck = Formula.luck(data, session)
 	local odds = Formula.eggOdds(eggId, luck)
+	local autoDelete = data.Settings.AutoDelete
 	local results = {}
+	local seen = {}
+	local kept = 0
 	for _ = 1, count do
 		local petId = Formula.rollEgg(eggId, luck, rng)
-		local uid, discovered = PetService.givePet(profile, petId, false)
-		table.insert(results, { Id = petId, Uid = uid, New = discovered })
-
-		local pet = Pets[petId]
-		if Config.Rarities[pet.Rarity].Announce then
-			local chance = 0
-			for _, entry in odds do
-				if entry.Id == petId then
-					chance = entry.Chance
-				end
-			end
-			announceRemote:FireAllClients(
-				string.format(
-					"%s hatched a %s %s! (%s)",
-					player.DisplayName,
-					pet.Rarity,
-					pet.Name,
-					Format.chance(chance)
-				),
-				Config.Rarities[pet.Rarity].Color
-			)
+		local isNew = not data.Index[petId] and not seen[petId]
+		seen[petId] = true
+		local deleted = autoDelete[Pets[petId].Rarity] == true and not isNew
+		if not deleted then
+			kept += 1
 		end
+		table.insert(results, { Id = petId, New = isNew, Deleted = deleted })
+	end
+	if Formula.petCount(data) + kept > Config.Pets.Storage then
+		DataService.notify(
+			player,
+			"Pet storage is full! Open 🐾 Pets → Delete Weak, or turn on auto-delete in ⚙️ Settings.",
+			"Error"
+		)
+		return
+	end
+
+	session.LastHatch = now
+	data.Coins -= cost
+	for _, result in results do
+		if not result.Deleted then
+			result.Uid = PetService.givePet(profile, result.Id, false)
+		end
+		announce(player, result.Id, odds)
 	end
 	data.Stats.EggsHatched += count
 	DataService.change(profile, "Coins", "Stats")
-	PetService.equipBest(profile)
+	afterInventoryChange(profile)
 	hatchedRemote:FireClient(player, eggId, results)
 end
 
@@ -182,6 +218,24 @@ local function setEquipped(profile, uid, equip)
 	refreshAttribute(profile)
 end
 
+local function setLocked(profile, uids, locked)
+	if type(uids) ~= "table" then
+		return
+	end
+	local data = profile.Data
+	for index, uid in uids do
+		if index > MAX_BATCH then
+			break
+		end
+		local pet = type(uid) == "string" and data.Pets[uid]
+		if pet then
+			pet.Locked = if locked == true then true else nil
+		end
+	end
+	DataService.change(profile, "Pets")
+end
+
+-- Deletes the given pets, skipping locked and equipped ones.
 local function deletePets(profile, uids)
 	if type(uids) ~= "table" then
 		return
@@ -189,38 +243,65 @@ local function deletePets(profile, uids)
 	local data = profile.Data
 	local removed = 0
 	for index, uid in uids do
-		if index > 100 then
+		if index > MAX_BATCH then
 			break
 		end
-		if type(uid) == "string" and data.Pets[uid] then
+		local pet = type(uid) == "string" and data.Pets[uid]
+		if pet and not pet.Locked and not pet.Equipped then
 			data.Pets[uid] = nil
 			removed += 1
 		end
 	end
 	if removed > 0 then
 		DataService.change(profile, "Pets")
-		refreshAttribute(profile)
+		DataService.notify(
+			profile.Player,
+			"🗑 Deleted " .. removed .. (if removed == 1 then " pet" else " pets"),
+			"Info"
+		)
 	end
 end
 
-local function makeGolden(profile, petId)
+-- Deletes every unlocked, unequipped, non-golden pet weaker than your weakest equipped pet.
+local function deleteWeak(profile)
 	local data = profile.Data
-	if type(petId) ~= "string" or not Pets[petId] then
+	local weakest = math.huge
+	for _, pet in data.Pets do
+		if pet.Equipped then
+			weakest = math.min(weakest, Formula.petPower(pet.Id, pet.Golden))
+		end
+	end
+	if weakest == math.huge then
+		DataService.notify(profile.Player, "Equip some pets first, then Delete Weak removes the weaker ones.", "Info")
 		return
 	end
+	local removed = 0
+	for uid, pet in data.Pets do
+		local weak = Formula.petPower(pet.Id, pet.Golden) < weakest
+		if weak and not pet.Equipped and not pet.Locked and not pet.Golden and not isPrecious(pet) then
+			data.Pets[uid] = nil
+			removed += 1
+		end
+	end
+	if removed == 0 then
+		DataService.notify(profile.Player, "No weak pets to delete.", "Info")
+		return
+	end
+	DataService.change(profile, "Pets")
+	DataService.notify(profile.Player, "🗑 Deleted " .. removed .. " weak pets", "Success")
+end
+
+-- Turns GoldenCopies unlocked copies of a pet into one golden pet. Returns true on success.
+local function craftGolden(profile, petId: string): boolean
+	local data = profile.Data
 	local copies = {}
 	for uid, pet in data.Pets do
-		if pet.Id == petId and not pet.Golden then
+		if pet.Id == petId and not pet.Golden and not pet.Locked then
 			table.insert(copies, uid)
 		end
 	end
 	if #copies < Config.Pets.GoldenCopies then
-		DataService.notify(
-			profile.Player,
-			"You need " .. Config.Pets.GoldenCopies .. " of the same pet to make it golden.",
-			"Error"
-		)
-		return
+		return false
 	end
 	-- Use unequipped copies first.
 	table.sort(copies, function(a, b)
@@ -234,8 +315,42 @@ local function makeGolden(profile, petId)
 		data.Pets[copies[index]] = nil
 	end
 	PetService.givePet(profile, petId, true)
-	PetService.equipBest(profile)
+	return true
+end
+
+local function makeGolden(profile, petId)
+	if type(petId) ~= "string" or not Pets[petId] then
+		return
+	end
+	if not craftGolden(profile, petId) then
+		DataService.notify(
+			profile.Player,
+			"You need " .. Config.Pets.GoldenCopies .. " unlocked copies of the same pet to make it golden.",
+			"Error"
+		)
+		return
+	end
+	afterInventoryChange(profile)
 	DataService.notify(profile.Player, "✨ Made a Golden " .. Pets[petId].Name .. "!", "Success")
+end
+
+local function makeAllGolden(profile)
+	local made = 0
+	for petId in Pets do
+		while craftGolden(profile, petId) do
+			made += 1
+		end
+	end
+	if made == 0 then
+		DataService.notify(
+			profile.Player,
+			"Nothing to craft yet: you need " .. Config.Pets.GoldenCopies .. " unlocked copies of a pet.",
+			"Info"
+		)
+		return
+	end
+	afterInventoryChange(profile)
+	DataService.notify(profile.Player, "✨ Made " .. made .. " golden pets!", "Success")
 end
 
 function PetService.Init()
@@ -278,8 +393,11 @@ function PetService.Start()
 		setEquipped(profile, uid, false)
 	end)
 	Actions.register("EquipBest", PetService.equipBest)
+	Actions.register("SetLocked", setLocked)
 	Actions.register("DeletePets", deletePets)
+	Actions.register("DeleteWeak", deleteWeak)
 	Actions.register("MakeGolden", makeGolden)
+	Actions.register("MakeAllGolden", makeAllGolden)
 
 	Players.PlayerRemoving:Connect(function(player)
 		player:SetAttribute("EquippedPets", nil)

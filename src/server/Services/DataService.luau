@@ -71,6 +71,17 @@ local TEMPLATE = {
 	OneTime = {},
 	-- Most recent receipt ids, so a retried receipt is never granted twice.
 	Purchases = {},
+	-- Player preferences, changed from the ⚙️ Settings window.
+	Settings = {
+		-- "Full", "Fast" or "Off"
+		HatchAnimation = "Full",
+		-- Equip your strongest pets automatically after hatching or crafting.
+		AutoEquip = true,
+		Sounds = true,
+		ShowOtherPets = true,
+		-- Hatched pets of these rarities are deleted right away (new discoveries are always kept).
+		AutoDelete = { Common = false, Uncommon = false, Rare = false, Epic = false },
+	},
 }
 
 local profiles: { [Player]: Profile } = {}

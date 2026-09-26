@@ -54,7 +54,8 @@ function EconomyService.applyWalkSpeed(profile)
 	end
 end
 
-local function buyUpgrade(profile, upgradeId)
+-- Buys one level, or with `max` as many levels as the player can afford.
+local function buyUpgrade(profile, upgradeId, max)
 	if type(upgradeId) ~= "string" then
 		return
 	end
@@ -63,20 +64,29 @@ local function buyUpgrade(profile, upgradeId)
 		return
 	end
 	local data = profile.Data
-	local level = Formula.level(data, upgradeId)
-	local cost = Formula.upgradeCost(upgradeId, level)
-	if not cost then
-		DataService.notify(profile.Player, upgrade.Name .. " is maxed out!", "Info")
+	local bought = 0
+	while bought < (if max == true then upgrade.MaxLevel else 1) do
+		local level = Formula.level(data, upgradeId)
+		local cost = Formula.upgradeCost(upgradeId, level)
+		if not cost or data[upgrade.Currency] < cost then
+			break
+		end
+		data[upgrade.Currency] -= cost
+		data.Upgrades[upgradeId] = level + 1
+		bought += 1
+	end
+	if bought == 0 then
+		if not Formula.upgradeCost(upgradeId, Formula.level(data, upgradeId)) then
+			DataService.notify(profile.Player, upgrade.Name .. " is maxed out!", "Info")
+		else
+			DataService.notify(profile.Player, "Not enough " .. string.lower(upgrade.Currency) .. "!", "Error")
+		end
 		return
 	end
-	local balance = data[upgrade.Currency]
-	if balance < cost then
-		DataService.notify(profile.Player, "Not enough " .. string.lower(upgrade.Currency) .. "!", "Error")
-		return
-	end
-	data[upgrade.Currency] -= cost
-	data.Upgrades[upgradeId] = level + 1
 	DataService.change(profile, upgrade.Currency, "Upgrades")
+	if bought > 1 then
+		DataService.notify(profile.Player, "⬆️ " .. upgrade.Name .. " +" .. bought .. " levels", "Success")
+	end
 
 	if upgradeId == "WalkSpeed" then
 		EconomyService.applyWalkSpeed(profile)

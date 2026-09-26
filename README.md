@@ -68,7 +68,9 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 | Clovers → Luck level | 🍀 clovers on the ground give Luck XP (more in later areas, 10× for golden Lucky Clovers). Every Luck level adds +2% luck, forever |
 | Eggs → pets | Rarity reveals, a NEW! badge, a gem bonus for every new pet, server-wide shout-outs for Legendary and up |
 | Pet Index | A collection book with silhouettes of pets you haven't found yet |
-| Golden pets | Combine 5 copies into a pet with 3× power |
+| Golden pets | Combine 5 copies into a pet with 3× power, one at a time or all at once |
+| Easy pet management | Duplicates stack into one card (×12), 🔒 lock favourites, one-click Equip Best / Craft All Golden / Delete Weak, auto-delete chosen rarities on hatch, 150 storage |
+| Quality of life | Free Auto Hatch at any egg, Full / Fast / Off hatch animation, Max-buy upgrades, open all gifts at once, ⚙️ Settings for sounds and other players' pets |
 | Areas | Five themed areas, each with a new egg and a bigger multiplier |
 | Rebirth | Trade coins for a permanent multiplier plus gems |
 | Stats | The 📊 window (or the luck meter under your coins) breaks down your luck and coins per tap, plus lifetime totals |

@@ -22,6 +22,9 @@ local Windows = require(script.Parent.Windows)
 
 local Hud = {}
 
+-- The frame around the TAP button, so other controllers can place buttons beside it.
+Hud.TapArea = nil :: Frame?
+
 local tapButton: TextButton
 local tapValueLabel: TextLabel
 local badges: { [string]: Frame } = {}
@@ -37,6 +40,7 @@ local MENU = {
 	{ Window = "Gifts", Icon = "🎁", Color = Theme.Colors.Gold },
 	{ Window = "Stats", Icon = "📊", Color = Theme.Colors.Luck },
 	{ Window = "Codes", Icon = "🎫", Color = Theme.Colors.Gray },
+	{ Window = "Settings", Icon = "⚙️", Color = Theme.Colors.Gray },
 }
 
 local function buildCurrencies(screen: ScreenGui, openShop: (string) -> ())
@@ -138,8 +142,8 @@ local function buildMenu(screen: ScreenGui)
 	local menu = Util.new("Frame", {
 		Name = "Menu",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, 70),
-		Size = UDim2.fromOffset(230, 230),
+		Position = UDim2.new(0, 12, 0.5, 80),
+		Size = UDim2.fromOffset(230, 310),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	}, {
@@ -273,6 +277,8 @@ local function buildTap(screen: ScreenGui)
 		Parent = screen,
 	})
 	Util.autoScale(holder)
+
+	Hud.TapArea = holder
 
 	tapValueLabel = Util.label({
 		Size = UDim2.fromOffset(240, 30),
@@ -435,8 +441,9 @@ local function refreshBadges()
 			equipped += 1
 		end
 	end
-	hasFreeSlot = equipped < Formula.equipSlots(data, session) and equipped < Formula.petCount(data)
-	badges.Pets.Visible = hasFreeSlot
+	local count = Formula.petCount(data)
+	hasFreeSlot = equipped < Formula.equipSlots(data, session) and equipped < count
+	badges.Pets.Visible = hasFreeSlot or count >= Config.Pets.Storage * 0.9
 end
 
 -- Floating "+123" above the TAP button.

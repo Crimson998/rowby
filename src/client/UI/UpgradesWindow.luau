@@ -13,7 +13,7 @@ local Windows = require(script.Parent.Windows)
 
 local UpgradesWindow = {}
 
-type Row = { Upgrade: Upgrades.Upgrade, Title: TextLabel, Effect: TextLabel, Buy: TextButton }
+type Row = { Upgrade: Upgrades.Upgrade, Title: TextLabel, Effect: TextLabel, Buy: TextButton, Max: TextButton }
 
 function UpgradesWindow.build()
 	local body = Windows.create("Upgrades", "⬆️ Upgrades", Theme.Colors.Blue, Vector2.new(620, 480))
@@ -80,13 +80,23 @@ function UpgradesWindow.build()
 		})
 		local buy = Util.button({
 			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -10, 0.5, 0),
-			Size = UDim2.fromOffset(150, 54),
+			Position = UDim2.new(1, -78, 0.5, 0),
+			Size = UDim2.fromOffset(118, 54),
 			Parent = row,
 		}, function()
 			Actions("BuyUpgrade", upgrade.Id)
 		end)
-		table.insert(rows, { Upgrade = upgrade, Title = title, Effect = effect, Buy = buy })
+		-- Buys as many levels as you can afford in one click.
+		local max = Util.button({
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -10, 0.5, 0),
+			Size = UDim2.fromOffset(62, 54),
+			Text = "Max",
+			Parent = row,
+		}, function()
+			Actions("BuyUpgrade", upgrade.Id, true)
+		end)
+		table.insert(rows, { Upgrade = upgrade, Title = title, Effect = effect, Buy = buy, Max = max })
 	end
 
 	State.watch({ "Coins", "Gems", "Upgrades" }, function()
@@ -104,10 +114,13 @@ function UpgradesWindow.build()
 				row.Buy.Text = icon .. Format.number(cost)
 				local affordable = data[upgrade.Currency] >= cost
 				row.Buy.BackgroundColor3 = if affordable then Theme.Colors.Green else Theme.Colors.Disabled
+				row.Max.Visible = true
+				row.Max.BackgroundColor3 = if affordable then Theme.Colors.Blue else Theme.Colors.Disabled
 			else
 				row.Effect.Text = Formula.upgradeEffect(upgrade.Id, level)
-				row.Buy.Text = "MAX"
+				row.Buy.Text = "MAXED"
 				row.Buy.BackgroundColor3 = Theme.Colors.Gold
+				row.Max.Visible = false
 			end
 		end
 	end)

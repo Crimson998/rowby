@@ -154,6 +154,19 @@ end
 function RewardService.Start()
 	Actions.register("ClaimDaily", claimDaily)
 	Actions.register("ClaimGift", claimGift)
+	Actions.register("ClaimAllGifts", function(profile)
+		-- Only gifts that were ready when the request arrived; a claim can start a new round.
+		local elapsed = workspace:GetServerTimeNow() - profile.Session.JoinedAt
+		local ready = {}
+		for index, gift in Config.Gifts do
+			if not profile.Session.GiftsClaimed[index] and elapsed >= gift.Minutes * 60 then
+				table.insert(ready, index)
+			end
+		end
+		for _, index in ready do
+			claimGift(profile, index)
+		end
+	end)
 	Actions.register("ClaimQuest", claimQuest)
 	Net.func("RedeemCode").OnServerInvoke = redeemCode
 

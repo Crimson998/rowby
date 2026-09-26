@@ -1,5 +1,10 @@
 --[[
-	Pet inventory (equip, golden crafting, delete) and the Pet Index collection book.
+	Pet inventory and the Pet Index.
+
+	Copies of the same pet are stacked into one card ("×12") so the inventory stays readable.
+	Select a stack to equip/unequip copies, lock it (locked pets are never deleted or used for
+	golden crafting), craft a golden, or delete copies. The toolbar has one-click Equip Best,
+	Craft All Golden and Delete Weak.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,9 +27,23 @@ local PetsWindow = {}
 
 local NAME = "Pets"
 local DETAIL_WIDTH = 220
+local TOOLBAR_HEIGHT = 84
+
+type Stack = {
+	Key: string,
+	Id: string,
+	Golden: boolean,
+	Power: number,
+	Equipped: { string },
+	Unequipped: { string },
+	-- Unequipped and unlocked: the copies that can be deleted.
+	Deletable: { string },
+	All: { string },
+	LockedCount: number,
+}
 
 local mode = "Inventory"
-local selectedUid: string? = nil
+local selectedKey: string? = nil
 local dirty = true
 
 local grid: ScrollingFrame
@@ -34,29 +53,66 @@ local detail: Frame
 local detailViewport: ViewportFrame
 local detailName: TextLabel
 local detailRarity: TextLabel
-local detailPower: TextLabel
+local detailOwned: TextLabel
 local equipButton: TextButton
+local unequipButton: TextButton
+local lockButton: TextButton
 local goldenButton: TextButton
-local deleteButton: TextButton
-local confirmDelete = 0
+local deleteOneButton: TextButton
+local deleteAllButton: TextButton
+local toolButtons: { GuiObject } = {}
 
 local function rarityColor(petId: string): Color3
 	return Config.Rarities[Pets[petId].Rarity].Color
 end
 
-local function sortedInventory(): { { Uid: string, Pet: any, Power: number } }
-	local list = {}
+local function buildStacks(): { Stack }
+	local byKey: { [string]: Stack } = {}
+	local list: { Stack } = {}
 	for uid, pet in State.Data.Pets do
-		table.insert(list, { Uid = uid, Pet = pet, Power = Formula.petPower(pet.Id, pet.Golden) })
+		local key = if pet.Golden then pet.Id .. ":G" else pet.Id
+		local stack = byKey[key]
+		if not stack then
+			stack = {
+				Key = key,
+				Id = pet.Id,
+				Golden = pet.Golden == true,
+				Power = Formula.petPower(pet.Id, pet.Golden),
+				Equipped = {},
+				Unequipped = {},
+				Deletable = {},
+				All = {},
+				LockedCount = 0,
+			}
+			byKey[key] = stack
+			table.insert(list, stack)
+		end
+		table.insert(stack.All, uid)
+		if pet.Equipped then
+			table.insert(stack.Equipped, uid)
+		else
+			table.insert(stack.Unequipped, uid)
+			if not pet.Locked then
+				table.insert(stack.Deletable, uid)
+			end
+		end
+		if pet.Locked then
+			stack.LockedCount += 1
+		end
+	end
+	for _, stack in list do
+		table.sort(stack.Deletable)
+		table.sort(stack.Unequipped)
 	end
 	table.sort(list, function(a, b)
-		if a.Pet.Equipped ~= b.Pet.Equipped then
-			return a.Pet.Equipped
+		local aEquipped, bEquipped = #a.Equipped > 0, #b.Equipped > 0
+		if aEquipped ~= bEquipped then
+			return aEquipped
 		end
 		if a.Power ~= b.Power then
 			return a.Power > b.Power
 		end
-		return a.Uid < b.Uid
+		return a.Key < b.Key
 	end)
 	return list
 end
@@ -99,47 +155,86 @@ local function card(order: number, petId: string, golden: boolean, hidden: boole
 	return button
 end
 
-local function refreshDetail()
-	local pet = selectedUid and State.Data.Pets[selectedUid]
-	detail.Visible = mode == "Inventory"
-	if not pet then
-		detailName.Text = "Select a pet"
-		detailRarity.Text = ""
-		detailPower.Text = ""
-		detailViewport.Visible = false
-		equipButton.Visible = false
-		goldenButton.Visible = false
-		deleteButton.Visible = false
-		return
-	end
-	local def = Pets[pet.Id]
-	detailViewport.Visible = true
-	Viewport.show(detailViewport, PetModels.pet(pet.Id, pet.Golden), 5)
-	detailName.Text = (if pet.Golden then "Golden " else "") .. def.Name
-	detailRarity.Text = def.Rarity
-	detailRarity.TextColor3 = rarityColor(pet.Id)
-	detailPower.Text = "+" .. Format.number(Formula.petPower(pet.Id, pet.Golden)) .. "x coins"
-
-	equipButton.Visible = true
-	equipButton.Text = if pet.Equipped then "Unequip" else "Equip"
-	equipButton.BackgroundColor3 = if pet.Equipped then Theme.Colors.Red else Theme.Colors.Green
-
-	local copies = 0
-	for _, other in State.Data.Pets do
-		if other.Id == pet.Id and not other.Golden then
-			copies += 1
+local function selectedStack(stacks: { Stack }): Stack?
+	for _, stack in stacks do
+		if stack.Key == selectedKey then
+			return stack
 		end
 	end
-	goldenButton.Visible = not pet.Golden
+	return nil
+end
+
+-- Buttons that need a second tap within 3 seconds.
+local confirmations: { [TextButton]: number } = {}
+local function confirmed(button: TextButton, label: string): boolean
+	local now = os.clock()
+	if now - (confirmations[button] or 0) < 3 then
+		confirmations[button] = nil
+		return true
+	end
+	confirmations[button] = now
+	button.Text = "Tap again!"
+	task.delay(3, function()
+		if confirmations[button] == now then
+			confirmations[button] = nil
+			button.Text = label
+		end
+	end)
+	return false
+end
+
+local function refreshDetail(stack: Stack?)
+	detail.Visible = mode == "Inventory"
+	local buttons = { equipButton, unequipButton, lockButton, goldenButton, deleteOneButton, deleteAllButton }
+	if not stack then
+		detailName.Text = "Select a pet"
+		detailRarity.Text = ""
+		detailOwned.Text = "Tap a card to manage it."
+		detailViewport.Visible = false
+		for _, button in buttons do
+			button.Visible = false
+		end
+		return
+	end
+	for _, button in buttons do
+		button.Visible = true
+		confirmations[button] = nil
+	end
+	local def = Pets[stack.Id]
+	detailViewport.Visible = true
+	Viewport.show(detailViewport, PetModels.pet(stack.Id, stack.Golden), 5)
+	detailName.Text = (if stack.Golden then "Golden " else "") .. def.Name
+	detailRarity.Text = def.Rarity .. "  ·  +" .. Format.number(stack.Power) .. "x each"
+	detailRarity.TextColor3 = rarityColor(stack.Id)
+	detailOwned.Text =
+		string.format("Owned %d  ·  Equipped %d  ·  Locked %d", #stack.All, #stack.Equipped, stack.LockedCount)
+
+	equipButton.Text = "Equip +1"
+	equipButton.BackgroundColor3 = if #stack.Unequipped > 0 then Theme.Colors.Green else Theme.Colors.Disabled
+	unequipButton.Text = "Unequip -1"
+	unequipButton.BackgroundColor3 = if #stack.Equipped > 0 then Theme.Colors.Red else Theme.Colors.Disabled
+
+	local allLocked = stack.LockedCount == #stack.All
+	lockButton.Text = if allLocked then "🔓 Unlock" else "🔒 Lock"
+	lockButton.BackgroundColor3 = if allLocked then Theme.Colors.Gray else Theme.Colors.Blue
+
+	local unlockedCopies = #stack.All - stack.LockedCount
+	goldenButton.Visible = not stack.Golden
 	goldenButton.Text =
-		string.format("✨ Make Golden (%d/%d)", math.min(copies, Config.Pets.GoldenCopies), Config.Pets.GoldenCopies)
-	goldenButton.BackgroundColor3 = if copies >= Config.Pets.GoldenCopies
+		string.format("✨ Golden %d/%d", math.min(unlockedCopies, Config.Pets.GoldenCopies), Config.Pets.GoldenCopies)
+	goldenButton.BackgroundColor3 = if unlockedCopies >= Config.Pets.GoldenCopies
 		then Theme.Colors.Gold
 		else Theme.Colors.Disabled
 
-	deleteButton.Visible = true
-	deleteButton.Text = "🗑 Delete"
-	confirmDelete = 0
+	local canDelete = #stack.Deletable > 0
+	deleteOneButton.Text = "🗑 Delete 1"
+	deleteAllButton.Text = "🗑 All (" .. #stack.Deletable .. ")"
+	deleteOneButton.BackgroundColor3 = if canDelete then Theme.Colors.Red else Theme.Colors.Disabled
+	deleteAllButton.BackgroundColor3 = if canDelete then Theme.Colors.Red else Theme.Colors.Disabled
+end
+
+local function currentStack(): Stack?
+	return selectedStack(buildStacks())
 end
 
 local function rebuild()
@@ -150,6 +245,9 @@ local function rebuild()
 		end
 	end
 	local data = State.Data
+	for _, button in toolButtons do
+		button.Visible = mode == "Inventory"
+	end
 	if mode == "Inventory" then
 		modeButton.Text = "📖 Index"
 		local equipped = 0
@@ -158,35 +256,53 @@ local function rebuild()
 				equipped += 1
 			end
 		end
+		local count = Formula.petCount(data)
+		local nearlyFull = count >= Config.Pets.Storage * 0.9
 		info.Text = string.format(
-			"Equipped %d/%d  ·  Storage %d/%d",
+			"Equipped %d/%d  ·  Storage %d/%d%s",
 			equipped,
 			Formula.equipSlots(data, State.Session),
-			Formula.petCount(data),
-			Config.Pets.Storage
+			count,
+			Config.Pets.Storage,
+			if nearlyFull then "  ⚠️" else ""
 		)
-		if selectedUid and not data.Pets[selectedUid] then
-			selectedUid = nil
+		info.TextColor3 = if nearlyFull then Theme.Colors.Orange else Theme.Colors.Text
+
+		local stacks = buildStacks()
+		if not selectedStack(stacks) then
+			selectedKey = nil
 		end
-		for order, entry in sortedInventory() do
-			local button = card(order, entry.Pet.Id, entry.Pet.Golden, false)
-			if entry.Pet.Equipped then
+		for order, stack in stacks do
+			local button = card(order, stack.Id, stack.Golden, false)
+			local marks = (if #stack.Equipped > 0 then "✅" else "") .. (if stack.LockedCount > 0 then "🔒" else "")
+			if marks ~= "" then
 				Util.label({
-					Size = UDim2.fromOffset(22, 22),
-					Position = UDim2.fromOffset(2, 0),
-					Text = "✅",
+					Size = UDim2.fromOffset(44, 22),
+					Position = UDim2.fromOffset(0, 0),
+					Text = marks,
 					Parent = button,
 				})
 			end
-			if entry.Uid == selectedUid then
+			if #stack.All > 1 then
+				Util.label({
+					AnchorPoint = Vector2.new(1, 0),
+					Size = UDim2.fromOffset(46, 22),
+					Position = UDim2.new(1, 0, 0, 52),
+					Text = "×" .. #stack.All,
+					TextXAlignment = Enum.TextXAlignment.Right,
+					Parent = button,
+				})
+			end
+			if stack.Key == selectedKey then
 				(button:FindFirstChild("Border") :: UIStroke).Thickness = 5
 			end
 			button.Activated:Connect(function()
-				selectedUid = entry.Uid
+				selectedKey = stack.Key
 				rebuild()
 			end)
 		end
-		grid.Size = UDim2.new(1, -DETAIL_WIDTH - 10, 1, -50)
+		refreshDetail(selectedStack(stacks))
+		grid.Size = UDim2.new(1, -DETAIL_WIDTH - 10, 1, -TOOLBAR_HEIGHT)
 	else
 		modeButton.Text = "🎒 Inventory"
 		local order = PetModels.indexOrder()
@@ -199,75 +315,81 @@ local function rebuild()
 			card(index, petId, false, not discovered)
 		end
 		info.Text = string.format("Discovered %d/%d  ·  New pets give 💎!", found, #order)
-		grid.Size = UDim2.new(1, 0, 1, -50)
+		info.TextColor3 = Theme.Colors.Text
+		grid.Size = UDim2.new(1, 0, 1, -TOOLBAR_HEIGHT)
+		refreshDetail(nil)
 	end
-	refreshDetail()
+end
+
+local function toolButton(order: number, text: string, color: Color3, onClick: (TextButton) -> ()): TextButton
+	local button: TextButton
+	button = Util.button({
+		LayoutOrder = order,
+		Text = text,
+		Size = UDim2.fromOffset(170, 36),
+		Color = color,
+		Parent = nil,
+	}, function()
+		onClick(button)
+	end)
+	table.insert(toolButtons, button)
+	return button
 end
 
 function PetsWindow.build()
-	local body = Windows.create(NAME, "🐾 Pets", Theme.Colors.Orange, Vector2.new(740, 480))
+	local body = Windows.create(NAME, "🐾 Pets", Theme.Colors.Orange, Vector2.new(780, 500))
 
 	info = Util.label({
-		Size = UDim2.new(0.5, 0, 0, 30),
-		Position = UDim2.fromOffset(0, 4),
+		Size = UDim2.new(1, -170, 0, 32),
+		Position = UDim2.fromOffset(0, 2),
 		Text = "",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = body,
 	})
 	modeButton = Util.button({
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -300, 0, 0),
-		Size = UDim2.fromOffset(130, 38),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.fromOffset(150, 36),
 		Color = Theme.Colors.Purple,
 		Parent = body,
 	}, function()
 		mode = if mode == "Inventory" then "Index" else "Inventory"
 		rebuild()
 	end)
-	Util.button({
-		Text = "⭐ Equip Best",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -150, 0, 0),
-		Size = UDim2.fromOffset(140, 38),
-		Color = Theme.Colors.Green,
+
+	local toolbar = Util.new("Frame", {
+		Position = UDim2.fromOffset(0, 40),
+		Size = UDim2.new(1, 0, 0, 36),
+		BackgroundTransparency = 1,
 		Parent = body,
-	}, function()
+	}, { Util.list(Enum.FillDirection.Horizontal, 8) })
+	toolButton(1, "⭐ Equip Best", Theme.Colors.Green, function()
 		Actions("EquipBest")
-	end)
-	local clearConfirm = 0
-	local clearButton: TextButton
-	clearButton = Util.button({
-		Text = "🗑 Clear Commons",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.fromOffset(140, 38),
-		Color = Theme.Colors.Red,
-		Parent = body,
-	}, function()
-		if os.clock() - clearConfirm > 3 then
-			clearConfirm = os.clock()
-			clearButton.Text = "Tap to confirm"
-			task.delay(3, function()
-				clearButton.Text = "🗑 Clear Commons"
-			end)
-			return
+	end).Parent = toolbar
+	toolButton(2, "✨ Craft All Golden", Theme.Colors.Gold, function()
+		Actions("MakeAllGolden")
+	end).Parent =
+		toolbar
+	toolButton(3, "🗑 Delete Weak", Theme.Colors.Red, function(button)
+		if confirmed(button, "🗑 Delete Weak") then
+			button.Text = "🗑 Delete Weak"
+			Actions("DeleteWeak")
 		end
-		clearConfirm = 0
-		clearButton.Text = "🗑 Clear Commons"
-		local uids = {}
-		for uid, pet in State.Data.Pets do
-			if not pet.Equipped and not pet.Golden and Pets[pet.Id].Rarity == "Common" then
-				table.insert(uids, uid)
-			end
-		end
-		if #uids > 0 then
-			Actions("DeletePets", uids)
-		end
-	end)
+	end).Parent =
+		toolbar
+	local hint = Util.label({
+		LayoutOrder = 4,
+		Size = UDim2.fromOffset(200, 36),
+		Text = "Delete Weak keeps locked, golden, equipped & Legendary+",
+		TextColor3 = Theme.Colors.SubText,
+		TextWrapped = true,
+		Parent = toolbar,
+	})
+	table.insert(toolButtons, hint)
 
 	grid = Util.new("ScrollingFrame", {
-		Position = UDim2.fromOffset(0, 48),
-		Size = UDim2.new(1, -DETAIL_WIDTH - 10, 1, -50),
+		Position = UDim2.fromOffset(0, TOOLBAR_HEIGHT),
+		Size = UDim2.new(1, -DETAIL_WIDTH - 10, 1, -TOOLBAR_HEIGHT),
 		BackgroundColor3 = Theme.Colors.Panel,
 		ScrollBarThickness = 8,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -285,61 +407,97 @@ function PetsWindow.build()
 
 	detail = Util.new("Frame", {
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 48),
-		Size = UDim2.new(0, DETAIL_WIDTH, 1, -50),
+		Position = UDim2.new(1, 0, 0, TOOLBAR_HEIGHT),
+		Size = UDim2.new(0, DETAIL_WIDTH, 1, -TOOLBAR_HEIGHT),
 		BackgroundColor3 = Theme.Colors.Panel,
 		Parent = body,
 	}, { Util.corner(14) })
-	detailViewport = Viewport.new({ Size = UDim2.new(1, 0, 0, 140), Parent = detail })
-	detailName =
-		Util.label({ Size = UDim2.new(1, -16, 0, 28), Position = UDim2.fromOffset(8, 140), Text = "", Parent = detail })
-	detailRarity =
-		Util.label({ Size = UDim2.new(1, -16, 0, 22), Position = UDim2.fromOffset(8, 168), Text = "", Parent = detail })
-	detailPower = Util.label({
-		Size = UDim2.new(1, -16, 0, 22),
-		Position = UDim2.fromOffset(8, 190),
+	detailViewport = Viewport.new({ Size = UDim2.new(1, 0, 0, 100), Parent = detail })
+	detailName = Util.label({
+		Size = UDim2.new(1, -16, 0, 26),
+		Position = UDim2.fromOffset(8, 100),
 		Text = "",
-		TextColor3 = Theme.Colors.Coins,
+		Parent = detail,
+	})
+	detailRarity = Util.label({
+		Size = UDim2.new(1, -16, 0, 20),
+		Position = UDim2.fromOffset(8, 126),
+		Text = "",
+		Parent = detail,
+	})
+	detailOwned = Util.label({
+		Size = UDim2.new(1, -16, 0, 18),
+		Position = UDim2.fromOffset(8, 148),
+		Text = "",
+		TextColor3 = Theme.Colors.SubText,
 		Parent = detail,
 	})
 
-	equipButton = Util.button(
-		{ Size = UDim2.new(1, -20, 0, 38), Position = UDim2.fromOffset(10, 220), Parent = detail },
-		function()
-			local pet = selectedUid and State.Data.Pets[selectedUid]
-			if pet then
-				Actions(if pet.Equipped then "Unequip" else "Equip", selectedUid)
+	local function halfButton(row: number, column: number, onClick: (TextButton) -> ()): TextButton
+		local button: TextButton
+		button = Util.button({
+			Size = UDim2.new(0.5, -14, 0, 36),
+			Position = UDim2.new(
+				if column == 1 then 0 else 0.5,
+				if column == 1 then 10 else 4,
+				0,
+				170 + (row - 1) * 42
+			),
+			Parent = detail,
+		}, function()
+			local stack = currentStack()
+			if stack then
+				onClick(button)
 			end
-		end
-	)
-	goldenButton = Util.button({
-		Size = UDim2.new(1, -20, 0, 38),
-		Position = UDim2.fromOffset(10, 264),
-		Color = Theme.Colors.Gold,
-		Parent = detail,
-	}, function()
-		local pet = selectedUid and State.Data.Pets[selectedUid]
-		if pet then
-			Actions("MakeGolden", pet.Id)
+		end)
+		return button
+	end
+
+	equipButton = halfButton(1, 1, function()
+		local stack = currentStack()
+		if stack and #stack.Unequipped > 0 then
+			Actions("Equip", stack.Unequipped[1])
 		end
 	end)
-	deleteButton = Util.button({
-		Size = UDim2.new(1, -20, 0, 38),
-		Position = UDim2.fromOffset(10, 308),
-		Color = Theme.Colors.Red,
-		Parent = detail,
-	}, function()
-		if not selectedUid then
-			return
+	unequipButton = halfButton(1, 2, function()
+		local stack = currentStack()
+		if stack and #stack.Equipped > 0 then
+			Actions("Unequip", stack.Equipped[1])
 		end
-		if os.clock() - confirmDelete > 3 then
-			confirmDelete = os.clock()
-			deleteButton.Text = "Tap to confirm"
-			return
-		end
-		Actions("DeletePets", { selectedUid })
-		selectedUid = nil
 	end)
+	lockButton = halfButton(2, 1, function()
+		local stack = currentStack()
+		if stack then
+			Actions("SetLocked", stack.All, stack.LockedCount < #stack.All)
+		end
+	end)
+	goldenButton = halfButton(2, 2, function()
+		local stack = currentStack()
+		if stack then
+			Actions("MakeGolden", stack.Id)
+		end
+	end)
+	deleteOneButton = halfButton(3, 1, function()
+		local stack = currentStack()
+		if stack and #stack.Deletable > 0 then
+			Actions("DeletePets", { stack.Deletable[1] })
+		end
+	end)
+	deleteAllButton = halfButton(3, 2, function(button)
+		local stack = currentStack()
+		if stack and #stack.Deletable > 0 and confirmed(button, "🗑 All (" .. #stack.Deletable .. ")") then
+			Actions("DeletePets", stack.Deletable)
+		end
+	end)
+	Util.label({
+		AnchorPoint = Vector2.new(0, 1),
+		Size = UDim2.new(1, -16, 0, 30),
+		Position = UDim2.new(0, 8, 1, -4),
+		Text = "Locked pets are never deleted or used for golden crafting.",
+		TextColor3 = Theme.Colors.SubText,
+		TextWrapped = true,
+		Parent = detail,
+	})
 
 	State.watch({ "Pets", "Index", "Upgrades", "Session.Passes" }, function()
 		dirty = true

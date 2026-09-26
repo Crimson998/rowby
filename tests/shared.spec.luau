@@ -166,6 +166,14 @@ test("reward tables only use known fields", function()
 	end
 end)
 
+test("auto-delete can never remove Legendary or rarer pets", function()
+	for _, rarity in Config.Pets.AutoDeletable do
+		local info = Config.Rarities[rarity]
+		assert(info, "unknown rarity " .. rarity)
+		assert(not info.Announce, rarity .. " is too rare to auto-delete")
+	end
+end)
+
 -- Odds ---------------------------------------------------------------------------------------
 
 test("odds always sum to 100% and luck only helps rare pets", function()
