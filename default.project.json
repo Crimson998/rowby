@@ -7,15 +7,33 @@
         "$path": "src/shared"
       },
       "PetModels": {
-        "$path": "assets/PetModels"
+        "$path": "assets/PetModels",
+        "$ignoreUnknownInstances": true
       },
       "EggModels": {
-        "$path": "assets/EggModels"
+        "$path": "assets/EggModels",
+        "$ignoreUnknownInstances": true
+      },
+      "StudioAssets": {
+        "$path": "assets/ReplicatedStorage",
+        "$ignoreUnknownInstances": true
       }
     },
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"
+      }
+    },
+    "ServerStorage": {
+      "StudioAssets": {
+        "$path": "assets/ServerStorage",
+        "$ignoreUnknownInstances": true
+      }
+    },
+    "StarterGui": {
+      "StudioGui": {
+        "$path": "assets/StarterGui",
+        "$ignoreUnknownInstances": true
       }
     },
     "StarterPlayer": {
@@ -37,6 +55,10 @@
     "Workspace": {
       "$properties": {
         "StreamingEnabled": false
+      },
+      "StudioBuilds": {
+        "$path": "assets/Workspace",
+        "$ignoreUnknownInstances": true
       }
     },
     "Lighting": {

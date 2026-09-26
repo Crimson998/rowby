@@ -14,7 +14,8 @@ no binary place file. You build the place with [Rojo](https://rojo.space).
 2. Build a place file: `rojo build -o TapAndHatch.rbxlx`
 3. Open `TapAndHatch.rbxlx` in Roblox Studio and press **Play**.
 
-To edit live, run `rojo serve` and connect the Rojo Studio plugin instead of step 2.
+To edit live, run `rojo serve` and connect the Rojo Studio plugin instead of step 2 (see
+[Working in Studio alongside the code](#working-in-studio-alongside-the-code)).
 
 Saving in Studio needs **Game Settings → Security → Enable Studio Access to API Services**.
 Without it the game still runs; your progress just resets when you stop (you'll see a warning in
@@ -96,6 +97,47 @@ worth and level 50 about 10,400 (max level 200). Clovers give 1 Luck XP in the M
 the Cosmic Void. Luck is never reset by rebirth. Tune it in `Config.Luck`, `Config.Orbs` and each
 area's `CloverValue`.
 
+## Working in Studio alongside the code
+
+Scripts live in `src/` and Studio content lives in `assets/`. Rojo copies both into Studio, and
+anything that isn't in one of those folders is lost the next time the place is rebuilt.
+
+**Setup (once):** clone the repo (GitHub Desktop is easiest), run `rokit install` and
+`rojo plugin install`, then run `rojo serve` and press **Connect** in the Rojo plugin in Studio.
+
+**See the map while editing.** The map is built when the game starts, so edit mode starts
+empty. Paste this into the Command Bar (View → Command Bar) to show a locked preview, and run it
+again to hide it:
+
+```lua
+print(require(game.ServerScriptService.Server.MapBuilder).togglePreview())
+```
+
+The preview is only a guide: it's deleted when the game runs and edits to it aren't kept.
+
+**Where your Studio work goes:**
+
+| You built | Put it in (Studio) | Save it as (repo) |
+| --- | --- | --- |
+| Map pieces: buildings, obstacles, decorations | `Workspace > StudioBuilds` | `assets/Workspace/<Name>.rbxm` |
+| Your own screens and buttons (ScreenGuis) | `StarterGui > StudioGui` | `assets/StarterGui/<Name>.rbxm` |
+| Things your scripts clone on the server | `ServerStorage > StudioAssets` | `assets/ServerStorage/<Name>.rbxm` |
+| Things clients need (effects, sounds) | `ReplicatedStorage > StudioAssets` | `assets/ReplicatedStorage/<Name>.rbxm` |
+| Pet or egg models | `ReplicatedStorage > PetModels` / `EggModels` | `assets/PetModels/<PetId>.rbxm` (see below) |
+
+To save: group your work into one Model (Ctrl+G) or Folder, right-click it → **Save to File…**,
+and save it into the matching `assets/` folder. The file name becomes its name in the game, and
+saving again overwrites it. Rojo leaves anything you add in Studio alone, so nothing disappears
+while you work. It's only included in builds once it's saved to a file.
+
+**Scripts:** edit them in the `src/` files (VS Code works well), not inside Studio, because Rojo
+overwrites Studio script edits. Scripts inside your saved `.rbxm` models are fine (except in pet
+and egg models, which have scripts removed).
+
+**Handing off to Claude (or a teammate):** commit and push in GitHub Desktop, then describe what
+you changed and what you want next. They pull first, so your work is kept, and you click
+**Pull origin** afterwards to get their changes; with `rojo serve` running, Studio updates live.
+
 ## Using your own pet and egg models
 
 Every pet and egg has a generated look, so the game works with no art at all. To swap in your
@@ -146,8 +188,9 @@ All the numbers live in data modules, so balancing never means touching gameplay
 
 ```
 src/shared/     ReplicatedStorage.Shared    data + formulas used by server and client
-assets/         ReplicatedStorage.PetModels / EggModels  your own .rbxm models (optional)
+assets/         your Studio work saved as .rbxm: map pieces, UI, pet and egg models
 src/server/     ServerScriptService.Server  services (data, world, pets, economy, rewards, shop…)
+                                            and MapBuilder (the map, with an edit-mode preview)
 src/client/     StarterPlayerScripts.Client UI, pet rendering, world effects, input
 tests/          Luau unit tests for the shared rules (odds, formatting, streaks, catalog)
 ```
