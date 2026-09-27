@@ -29,7 +29,7 @@ export type Profile = {
 	Released: boolean,
 }
 
-local DATA_VERSION = 2
+local DATA_VERSION = 3
 
 -- The largest coin/gem total we store. Far beyond normal play, but finite so it can always save.
 DataService.MAX_NUMBER = 1e300
@@ -50,7 +50,7 @@ local TEMPLATE = {
 		Luck = 0,
 		CoinMastery = 0,
 	},
-	-- [uid] = { Id = petId, Tier = 1..#Config.Tiers, Equipped = bool, Locked = true? }
+	-- [uid] = { Id = petId, Tier = 1..#Config.Tiers, Level = 1..MaxLevel, Equipped = bool, Locked = true? }
 	Pets = {},
 	NextPetUid = 1,
 	-- [petId] = true once discovered
@@ -127,6 +127,12 @@ local function migrate(data)
 		for _, pet in data.Pets do
 			pet.Tier = if pet.Golden then 2 else 1
 			pet.Golden = nil
+		end
+	end
+	if (data.Version or 1) < 3 then
+		-- v3: pets gained a level.
+		for _, pet in data.Pets do
+			pet.Level = pet.Level or 1
 		end
 	end
 	data.Version = DATA_VERSION

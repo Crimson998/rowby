@@ -1,10 +1,11 @@
 --[[
 	Pet inventory and the Pet Index.
 
-	Copies of the same pet are stacked into one card ("×12") so the inventory stays readable.
-	Select a stack to equip/unequip copies, lock it (locked pets are never deleted or used for
-	crafting), craft 5 copies into the next tier (Golden → Diamond → Emerald → Void), or delete
-	copies. The toolbar has one-click Equip Best, Craft All and Delete Weak.
+	Identical pets (same pet, tier and level) are stacked into one card ("×12") so the inventory
+	stays readable. Select a stack to equip/unequip copies, lock it (locked pets are never deleted
+	or used for crafting), craft 5 copies of that pet and tier, at any levels, into the next tier
+	(Golden → Diamond → Emerald → Void), or delete copies. The toolbar has one-click Equip Best,
+	Craft All and Delete Weak.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -33,6 +34,7 @@ type Stack = {
 	Key: string,
 	Id: string,
 	Tier: number,
+	Level: number,
 	Power: number,
 	Equipped: { string },
 	Unequipped: { string },
@@ -66,19 +68,29 @@ local function rarityColor(petId: string): Color3
 	return Config.Rarities[Pets[petId].Rarity].Color
 end
 
+-- Unlocked copies of each pet and tier across all levels ("Doggy:2" = 7): what crafting can use.
+local craftable: { [string]: number } = {}
+
 local function buildStacks(): { Stack }
 	local byKey: { [string]: Stack } = {}
 	local list: { Stack } = {}
+	table.clear(craftable)
 	for uid, pet in State.Data.Pets do
 		local tier = Formula.tier(pet.Tier)
-		local key = pet.Id .. ":" .. tier
+		local level = Formula.petLevel(pet.Level)
+		if not pet.Locked then
+			local craftKey = pet.Id .. ":" .. tier
+			craftable[craftKey] = (craftable[craftKey] or 0) + 1
+		end
+		local key = pet.Id .. ":" .. tier .. ":" .. level
 		local stack = byKey[key]
 		if not stack then
 			stack = {
 				Key = key,
 				Id = pet.Id,
 				Tier = tier,
-				Power = Formula.petPower(pet.Id, tier),
+				Level = level,
+				Power = Formula.petPower(pet.Id, tier, level),
 				Equipped = {},
 				Unequipped = {},
 				Deletable = {},
@@ -118,7 +130,7 @@ local function buildStacks(): { Stack }
 	return list
 end
 
-local function card(order: number, petId: string, tier: number, hidden: boolean): TextButton
+local function card(order: number, petId: string, tier: number, level: number?, hidden: boolean): TextButton
 	local tierDef = Config.Tiers[tier]
 	local button = Util.button({
 		LayoutOrder = order,
@@ -142,7 +154,7 @@ local function card(order: number, petId: string, tier: number, hidden: boolean)
 		Name = "Power",
 		Size = UDim2.new(1, 0, 0, 16),
 		Position = UDim2.fromOffset(0, 94),
-		Text = if hidden then Pets[petId].Rarity else "+" .. Format.number(Formula.petPower(petId, tier)) .. "x",
+		Text = if hidden then Pets[petId].Rarity else "+" .. Format.number(Formula.petPower(petId, tier, level)) .. "x",
 		TextColor3 = rarityColor(petId),
 		Parent = button,
 	})
@@ -151,6 +163,15 @@ local function card(order: number, petId: string, tier: number, hidden: boolean)
 			Size = UDim2.fromOffset(22, 22),
 			Position = UDim2.new(1, -24, 0, 0),
 			Text = tierDef.Icon,
+			Parent = button,
+		})
+	end
+	if level then
+		Util.label({
+			Size = UDim2.fromOffset(46, 22),
+			Position = UDim2.fromOffset(2, 52),
+			Text = "Lv " .. level,
+			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = button,
 		})
 	end
@@ -207,7 +228,8 @@ local function refreshDetail(stack: Stack?)
 	local tierDef = Config.Tiers[stack.Tier]
 	Viewport.show(detailViewport, PetModels.pet(stack.Id, stack.Tier), 5)
 	detailName.Text = (if stack.Tier > 1 then tierDef.Icon .. " " .. tierDef.Name .. " " else "") .. def.Name
-	detailRarity.Text = def.Rarity .. "  ·  +" .. Format.number(stack.Power) .. "x each"
+	detailRarity.Text =
+		string.format("%s  ·  Lv %d  ·  +%sx each", def.Rarity, stack.Level, Format.number(stack.Power))
 	detailRarity.TextColor3 = rarityColor(stack.Id)
 	detailOwned.Text =
 		string.format("Owned %d  ·  Equipped %d  ·  Locked %d", #stack.All, #stack.Equipped, stack.LockedCount)
@@ -221,7 +243,8 @@ local function refreshDetail(stack: Stack?)
 	lockButton.Text = if allLocked then "🔓 Unlock" else "🔒 Lock"
 	lockButton.BackgroundColor3 = if allLocked then Theme.Colors.Gray else Theme.Colors.Blue
 
-	local unlockedCopies = #stack.All - stack.LockedCount
+	-- Crafting can use copies of this pet and tier at any level.
+	local unlockedCopies = craftable[stack.Id .. ":" .. stack.Tier] or 0
 	local nextTier = Config.Tiers[stack.Tier + 1]
 	craftButton.Visible = nextTier ~= nil
 	if nextTier then
@@ -284,7 +307,7 @@ local function rebuild()
 			selectedKey = nil
 		end
 		for order, stack in stacks do
-			local button = card(order, stack.Id, stack.Tier, false)
+			local button = card(order, stack.Id, stack.Tier, stack.Level, false)
 			local marks = (if #stack.Equipped > 0 then "✅" else "") .. (if stack.LockedCount > 0 then "🔒" else "")
 			if marks ~= "" then
 				Util.label({
@@ -323,7 +346,7 @@ local function rebuild()
 			if discovered then
 				found += 1
 			end
-			card(index, petId, 1, not discovered)
+			card(index, petId, 1, nil, not discovered)
 		end
 		info.Text = string.format("Discovered %d/%d  ·  New pets give 💎!", found, #order)
 		info.TextColor3 = Theme.Colors.Text
@@ -503,7 +526,7 @@ function PetsWindow.build()
 		AnchorPoint = Vector2.new(0, 1),
 		Size = UDim2.new(1, -16, 0, 30),
 		Position = UDim2.new(0, 8, 1, -4),
-		Text = "Locked pets are never deleted or used for crafting.",
+		Text = "Crafting keeps the best level used. Locked pets are never deleted or crafted.",
 		TextColor3 = Theme.Colors.SubText,
 		TextWrapped = true,
 		Parent = detail,

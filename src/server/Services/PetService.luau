@@ -21,6 +21,9 @@ local WorldService = require(script.Parent.WorldService)
 local PetService = {}
 
 local MAX_BATCH = 200
+-- Hatching this tier or better (Emerald+) is announced to the server, whatever the rarity.
+-- Diamond (about 1 in 90 hatches) would flood the chat.
+local ANNOUNCE_TIER = 4
 
 local rng = Random.new()
 local hatchedRemote = Net.event("Hatched")
@@ -34,7 +37,7 @@ local function refreshAttribute(profile)
 		end
 	end
 	table.sort(equipped, function(a, b)
-		return Formula.petPower(a.Id, a.Tier) > Formula.petPower(b.Id, b.Tier)
+		return Formula.petPower(a.Id, a.Tier, a.Level) > Formula.petPower(b.Id, b.Tier, b.Level)
 	end)
 	local parts = {}
 	for _, pet in equipped do
@@ -64,7 +67,7 @@ function PetService.equipBest(profile)
 	local slots = Formula.equipSlots(data, profile.Session)
 	local ranked = {}
 	for uid, pet in data.Pets do
-		table.insert(ranked, { Uid = uid, Power = Formula.petPower(pet.Id, pet.Tier) })
+		table.insert(ranked, { Uid = uid, Power = Formula.petPower(pet.Id, pet.Tier, pet.Level) })
 	end
 	table.sort(ranked, function(a, b)
 		if a.Power == b.Power then
@@ -91,11 +94,11 @@ local function afterInventoryChange(profile)
 end
 
 -- Adds a pet and returns its uid and whether it was a new index discovery.
-function PetService.givePet(profile, petId: string, tier: number?): (string, boolean)
+function PetService.givePet(profile, petId: string, tier: number?, level: number?): (string, boolean)
 	local data = profile.Data
 	local uid = "p" .. data.NextPetUid
 	data.NextPetUid += 1
-	data.Pets[uid] = { Id = petId, Tier = Formula.tier(tier), Equipped = false }
+	data.Pets[uid] = { Id = petId, Tier = Formula.tier(tier), Level = Formula.petLevel(level), Equipped = false }
 
 	local discovered = false
 	if not data.Index[petId] then
@@ -109,21 +112,32 @@ function PetService.givePet(profile, petId: string, tier: number?): (string, boo
 	return uid, discovered
 end
 
-local function announce(player: Player, petId: string, odds: Formula.Odds)
-	local pet = Pets[petId]
+-- Tells the server about Legendary-or-rarer pets and Emerald-or-better tiers.
+local function announce(player: Player, result, odds: Formula.Odds, tierOdds: { number })
+	local pet = Pets[result.Id]
 	local rarity = Config.Rarities[pet.Rarity]
-	if not rarity.Announce then
+	if not rarity.Announce and result.Tier < ANNOUNCE_TIER then
 		return
 	end
-	local chance = 0
+	local chance = tierOdds[result.Tier]
 	for _, entry in odds do
-		if entry.Id == petId then
-			chance = entry.Chance
+		if entry.Id == result.Id then
+			chance *= entry.Chance
 		end
 	end
+	local tier = Config.Tiers[result.Tier]
+	local tierName = if result.Tier > 1 then tier.Icon .. " " .. tier.Name .. " " else ""
 	announceRemote:FireAllClients(
-		string.format("%s hatched a %s %s! (%s)", player.DisplayName, pet.Rarity, pet.Name, Format.chance(chance)),
-		rarity.Color
+		string.format(
+			"%s hatched a %s%s %s (Lv %d)! (%s)",
+			player.DisplayName,
+			tierName,
+			pet.Rarity,
+			pet.Name,
+			result.Level,
+			Format.chance(chance)
+		),
+		if result.Tier >= ANNOUNCE_TIER then tier.Accent else rarity.Color
 	)
 end
 
@@ -160,22 +174,26 @@ local function hatch(profile, eggId, count)
 		return
 	end
 
-	-- Roll first so pets that will be auto-deleted don't need storage room.
+	-- Roll first so pets that will be auto-deleted don't need storage room. Each hatch rolls
+	-- the pet, its tier and its level separately.
 	local luck = Formula.luck(data, session)
 	local odds = Formula.eggOdds(eggId, luck)
+	local tierOdds = Formula.tierOdds(luck)
 	local autoDelete = data.Settings.AutoDelete
 	local results = {}
 	local seen = {}
 	local kept = 0
 	for _ = 1, count do
-		local petId = Formula.rollEgg(eggId, luck, rng)
+		local rolled = Formula.rollHatch(eggId, luck, rng)
+		local petId = rolled.Id
 		local isNew = not data.Index[petId] and not seen[petId]
 		seen[petId] = true
-		local deleted = autoDelete[Pets[petId].Rarity] == true and not isNew
+		-- Auto-delete never takes new discoveries or pets that rolled a higher tier.
+		local deleted = autoDelete[Pets[petId].Rarity] == true and not isNew and rolled.Tier == 1
 		if not deleted then
 			kept += 1
 		end
-		table.insert(results, { Id = petId, New = isNew, Deleted = deleted })
+		table.insert(results, { Id = petId, Tier = rolled.Tier, Level = rolled.Level, New = isNew, Deleted = deleted })
 	end
 	if Formula.petCount(data) + kept > Config.Pets.Storage then
 		DataService.notify(
@@ -190,9 +208,9 @@ local function hatch(profile, eggId, count)
 	data.Coins -= cost
 	for _, result in results do
 		if not result.Deleted then
-			result.Uid = PetService.givePet(profile, result.Id, 1)
+			result.Uid = PetService.givePet(profile, result.Id, result.Tier, result.Level)
 		end
-		announce(player, result.Id, odds)
+		announce(player, result, odds, tierOdds)
 	end
 	data.Stats.EggsHatched += count
 	DataService.change(profile, "Coins", "Stats")
@@ -269,7 +287,7 @@ local function deleteWeak(profile)
 	local weakest = math.huge
 	for _, pet in data.Pets do
 		if pet.Equipped then
-			weakest = math.min(weakest, Formula.petPower(pet.Id, pet.Tier))
+			weakest = math.min(weakest, Formula.petPower(pet.Id, pet.Tier, pet.Level))
 		end
 	end
 	if weakest == math.huge then
@@ -278,7 +296,7 @@ local function deleteWeak(profile)
 	end
 	local removed = 0
 	for uid, pet in data.Pets do
-		local weak = Formula.petPower(pet.Id, pet.Tier) < weakest
+		local weak = Formula.petPower(pet.Id, pet.Tier, pet.Level) < weakest
 		local upgraded = Formula.tier(pet.Tier) > 1
 		if weak and not pet.Equipped and not pet.Locked and not upgraded and not isPrecious(pet) then
 			data.Pets[uid] = nil
@@ -293,8 +311,9 @@ local function deleteWeak(profile)
 	DataService.notify(profile.Player, "🗑 Deleted " .. removed .. " weak pets", "Success")
 end
 
--- Combines CraftCopies unlocked copies of a pet at `tier` into one pet of the next tier.
--- Returns true on success.
+-- Combines CraftCopies unlocked copies of a pet at `tier` (any levels) into one pet of the next
+-- tier. It uses unequipped and lower-level copies first, and the new pet keeps the highest level
+-- among the copies used. Returns true on success.
 local function craftTier(profile, petId: string, tier: number): boolean
 	local data = profile.Data
 	if tier >= #Config.Tiers then
@@ -309,18 +328,24 @@ local function craftTier(profile, petId: string, tier: number): boolean
 	if #copies < Config.Pets.CraftCopies then
 		return false
 	end
-	-- Use unequipped copies first.
 	table.sort(copies, function(a, b)
-		local aEquipped, bEquipped = data.Pets[a].Equipped, data.Pets[b].Equipped
-		if aEquipped ~= bEquipped then
-			return not aEquipped
+		local petA, petB = data.Pets[a], data.Pets[b]
+		if petA.Equipped ~= petB.Equipped then
+			return not petA.Equipped
+		end
+		local levelA, levelB = Formula.petLevel(petA.Level), Formula.petLevel(petB.Level)
+		if levelA ~= levelB then
+			return levelA < levelB
 		end
 		return a < b
 	end)
+	local level = 1
 	for index = 1, Config.Pets.CraftCopies do
-		data.Pets[copies[index]] = nil
+		local uid = copies[index]
+		level = math.max(level, Formula.petLevel(data.Pets[uid].Level))
+		data.Pets[uid] = nil
 	end
-	PetService.givePet(profile, petId, tier + 1)
+	PetService.givePet(profile, petId, tier + 1, level)
 	return true
 end
 

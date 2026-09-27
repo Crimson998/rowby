@@ -97,17 +97,19 @@ end
 
 -- Pets ----------------------------------------------------------------------------------------
 
-COMMANDS.GivePet = function(profile, petId, tier, count)
+COMMANDS.GivePet = function(profile, petId, tier, count, level)
 	if type(petId) ~= "string" or not Pets[petId] then
 		return false, "Unknown pet."
 	end
 	local copies = math.clamp(math.floor(tonumber(count) or 1), 1, 50)
 	local petTier = Formula.tier(tier)
+	local petLevel = Formula.petLevel(level)
 	for _ = 1, copies do
-		PetService.givePet(profile, petId, petTier)
+		PetService.givePet(profile, petId, petTier, petLevel)
 	end
 	PetService.equipBest(profile)
-	return true, string.format("Gave %d× %s %s.", copies, Config.Tiers[petTier].Name, Pets[petId].Name)
+	return true,
+		string.format("Gave %d× %s %s (Lv %d).", copies, Config.Tiers[petTier].Name, Pets[petId].Name, petLevel)
 end
 
 COMMANDS.GiveEveryPet = function(profile)
@@ -239,34 +241,41 @@ COMMANDS.SimulateHatches = function(profile, eggId, count)
 	local rolls = math.clamp(math.floor(tonumber(count) or 10000), 1, 200000)
 	local luck = Formula.luck(profile.Data, profile.Session)
 	local odds = Formula.eggOdds(egg.Id, luck)
+	local tierOdds = Formula.tierOdds(luck)
+	local levelOdds = Formula.levelOdds(luck)
 	local rng = Random.new()
-	local counts = table.create(#odds, 0)
+	local petCounts: { [string]: number } = {}
+	local tierCounts = table.create(#tierOdds, 0)
+	local levelCounts = table.create(#levelOdds, 0)
 	for _ = 1, rolls do
-		local roll = rng:NextNumber()
-		local picked = #odds
-		for index, entry in odds do
-			roll -= entry.Chance
-			if roll <= 0 then
-				picked = index
-				break
-			end
-		end
-		counts[picked] += 1
+		local hatch = Formula.rollHatch(egg.Id, luck, rng)
+		petCounts[hatch.Id] = (petCounts[hatch.Id] or 0) + 1
+		tierCounts[hatch.Tier] += 1
+		levelCounts[hatch.Level] += 1
+	end
+	local function line(name: string, got: number, expected: number): string
+		return string.format(
+			"%s: %s (%s, expected %s)",
+			name,
+			Format.commas(got),
+			Format.chance(got / rolls),
+			Format.chance(expected)
+		)
 	end
 	local lines = {
 		string.format("%s × %s at luck %s (no coins spent):", Format.commas(rolls), egg.Name, Format.multiplier(luck)),
+		"Pets:",
 	}
-	for index, entry in odds do
-		table.insert(
-			lines,
-			string.format(
-				"%s: %s (%s, expected %s)",
-				Pets[entry.Id].Name,
-				Format.commas(counts[index]),
-				Format.chance(counts[index] / rolls),
-				Format.chance(entry.Chance)
-			)
-		)
+	for _, entry in odds do
+		table.insert(lines, line(Pets[entry.Id].Name, petCounts[entry.Id] or 0, entry.Chance))
+	end
+	table.insert(lines, "Tiers:")
+	for tier, chance in tierOdds do
+		table.insert(lines, line(Config.Tiers[tier].Name, tierCounts[tier], chance))
+	end
+	table.insert(lines, "Levels:")
+	for level, chance in levelOdds do
+		table.insert(lines, line("Lv " .. level, levelCounts[level], chance))
 	end
 	return true, table.concat(lines, "\n")
 end

@@ -39,6 +39,20 @@ local currentZone = 0
 
 local refreshEggBoards: () -> ()
 
+-- Level ranges shown on egg boards: level 2 up to the highest hatchable level, in three groups
+-- (e.g. Lv 2–4, 5–7, 8–10). Level 1 is whatever is left.
+local LEVEL_GROUPS: { { number } } = {}
+do
+	local top = #Config.Hatch.LevelWeights
+	local size = math.max(1, math.ceil((top - 1) / 3))
+	local first = 2
+	while first <= top do
+		local last = math.min(first + size - 1, top)
+		table.insert(LEVEL_GROUPS, { first, last })
+		first = last + 1
+	end
+end
+
 local function buildEggBoard(stand: Instance)
 	local eggId = stand:GetAttribute("EggId")
 	local egg = Eggs.ById[eggId]
@@ -50,10 +64,12 @@ local function buildEggBoard(stand: Instance)
 		eggModel:GetPropertyChangedSignal("PrimaryPart"):Wait()
 	end
 	local rowHeight = 24
+	local smallRow = 19
+	local extraRows = (#Config.Tiers - 1) + #LEVEL_GROUPS
 	local board = Util.new("BillboardGui", {
 		Name = "Odds",
 		Adornee = eggModel.PrimaryPart,
-		Size = UDim2.fromOffset(250, 84 + #egg.Pets * rowHeight),
+		Size = UDim2.fromOffset(250, 84 + #egg.Pets * rowHeight + 22 + extraRows * smallRow),
 		StudsOffset = Vector3.new(0, 9, 0),
 		MaxDistance = 80,
 		LightInfluence = 0,
@@ -102,6 +118,45 @@ local function buildEggBoard(stand: Instance)
 			Parent = frame,
 		})
 	end
+	-- Tier and level odds (rolled separately from the pet).
+	local y = 58 + #egg.Pets * rowHeight + 2
+	Util.label({
+		Size = UDim2.new(1, -16, 0, 18),
+		Position = UDim2.fromOffset(8, y),
+		Text = "Tier & level (rolled separately)",
+		TextColor3 = Theme.Colors.SubText,
+		Parent = frame,
+	})
+	y += 22
+	local function smallLine(name: string, color: Color3?, labelName: string)
+		Util.label({
+			Size = UDim2.new(0.62, -8, 0, smallRow - 3),
+			Position = UDim2.fromOffset(8, y),
+			Text = name,
+			TextColor3 = color or Theme.Colors.Text,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = frame,
+		})
+		Util.label({
+			Name = labelName,
+			AnchorPoint = Vector2.new(1, 0),
+			Size = UDim2.new(0.38, -8, 0, smallRow - 3),
+			Position = UDim2.new(1, -8, 0, y),
+			Text = "",
+			TextXAlignment = Enum.TextXAlignment.Right,
+			Parent = frame,
+		})
+		y += smallRow
+	end
+	for tier = 2, #Config.Tiers do
+		local def = Config.Tiers[tier]
+		smallLine(def.Icon .. " " .. def.Name, def.Accent, "Tier" .. tier)
+	end
+	for index, group in LEVEL_GROUPS do
+		local name = if group[1] == group[2] then "Lv " .. group[1] else "Lv " .. group[1] .. "–" .. group[2]
+		smallLine(name, nil, "Levels" .. index)
+	end
+
 	Util.label({
 		Name = "Footer",
 		AnchorPoint = Vector2.new(0, 1),
@@ -122,6 +177,8 @@ function refreshEggBoards()
 		return
 	end
 	lastLuck = luck
+	local tierOdds = Formula.tierOdds(luck)
+	local levelOdds = Formula.levelOdds(luck)
 	for eggId, board in eggBoards do
 		local egg = Eggs.ById[eggId]
 		local frame = board:FindFirstChildOfClass("Frame") :: Frame
@@ -130,6 +187,22 @@ function refreshEggBoards()
 			local label = frame:FindFirstChild("Chance" .. index) :: TextLabel?
 			if label then
 				label.Text = Format.chance(entry.Chance)
+			end
+		end
+		for tier, chance in tierOdds do
+			local label = frame:FindFirstChild("Tier" .. tier) :: TextLabel?
+			if label then
+				label.Text = Format.chance(chance)
+			end
+		end
+		for index, group in LEVEL_GROUPS do
+			local chance = 0
+			for level = group[1], group[2] do
+				chance += levelOdds[level]
+			end
+			local label = frame:FindFirstChild("Levels" .. index) :: TextLabel?
+			if label then
+				label.Text = Format.chance(chance)
 			end
 		end
 		local footer = frame:FindFirstChild("Footer") :: TextLabel

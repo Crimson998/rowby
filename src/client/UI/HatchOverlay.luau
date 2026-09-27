@@ -1,6 +1,6 @@
 --[[
 	Full-screen egg hatch: the egg wobbles harder and harder, flashes, then reveals the pet with
-	its rarity. Click to skip. A new hatch while one is playing replaces it immediately.
+	its rarity, tier and level. Click to skip. A new hatch while one is playing replaces it immediately.
 	Settings.HatchAnimation picks "Full", "Fast" (no wobble, short reveal) or "Off" (a toast).
 ]]
 
@@ -28,7 +28,19 @@ local SHAKE_TIME = 1.2
 local HOLD_TIME = 2.2
 local FAST_HOLD_TIME = 0.9
 
-type Result = { Id: string, Uid: string?, New: boolean, Deleted: boolean? }
+type Result = { Id: string, Tier: number, Level: number, Uid: string?, New: boolean, Deleted: boolean? }
+
+-- "⭐ Golden Doggy" or just "Doggy".
+local function title(result: Result): string
+	local tier = Config.Tiers[result.Tier] or Config.Tiers[1]
+	return (if result.Tier > 1 then tier.Icon .. " " .. tier.Name .. " " else "") .. Pets[result.Id].Name
+end
+
+-- How exciting a result is, for the sound and toast: rarity rank plus two per tier above Normal.
+local function excitement(result: Result): number
+	local rank = table.find(Config.RarityOrder, Pets[result.Id].Rarity) or 1
+	return rank + (result.Tier - 1) * 2
+end
 
 local gui: ScreenGui
 local container: Frame
@@ -83,12 +95,11 @@ local function toast(results: { Result })
 	local deleted = 0
 	local best = 1
 	for _, result in results do
-		local pet = Pets[result.Id]
-		best = math.max(best, table.find(Config.RarityOrder, pet.Rarity) or 1)
+		best = math.max(best, excitement(result))
 		if result.Deleted then
 			deleted += 1
 		else
-			table.insert(names, (if result.New then "NEW " else "") .. pet.Name)
+			table.insert(names, (if result.New then "NEW " else "") .. title(result) .. " Lv " .. result.Level)
 		end
 	end
 	local text = "🥚 " .. (if #names > 0 then table.concat(names, ", ") else "")
@@ -171,9 +182,16 @@ function HatchOverlay.play(eggId: string, results: { Result })
 	for _, slot in slots do
 		local pet = Pets[slot.Result.Id]
 		local rarity = Config.Rarities[pet.Rarity]
-		Viewport.show(slot.Viewport, PetModels.pet(slot.Result.Id, 1), 5.2)
-		slot.Name.Text = pet.Name
-		slot.Rarity.Text = pet.Rarity .. "  ·  +" .. Format.number(Formula.petPower(slot.Result.Id, 1)) .. "x"
+		local result = slot.Result
+		Viewport.show(slot.Viewport, PetModels.pet(result.Id, result.Tier), 5.2)
+		slot.Name.Text = title(result)
+		slot.Name.TextColor3 = if result.Tier > 1 then Config.Tiers[result.Tier].Accent else Theme.Colors.Text
+		slot.Rarity.Text = string.format(
+			"%s  ·  Lv %d  ·  +%sx",
+			pet.Rarity,
+			result.Level,
+			Format.number(Formula.petPower(result.Id, result.Tier, result.Level))
+		)
 		slot.Rarity.TextColor3 = rarity.Color
 		if slot.Result.Deleted then
 			slot.Rarity.Text = "🗑 Auto-deleted"
@@ -181,7 +199,7 @@ function HatchOverlay.play(eggId: string, results: { Result })
 			slot.Viewport.ImageTransparency = 0.6
 		end
 		slot.Badge.Visible = slot.Result.New
-		best = math.max(best, table.find(Config.RarityOrder, pet.Rarity) or 1)
+		best = math.max(best, excitement(result))
 	end
 	Sound.play("Reveal", if best >= 4 then 1 else 1.25, if best >= 4 then 0.8 else 0.5)
 

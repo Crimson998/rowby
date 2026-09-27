@@ -53,8 +53,8 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 
 ### Built-in policy compliance
 
-- **Odds disclosure.** Every egg shows the exact chance of each pet, calculated by the same
-  function that rolls the hatch, including the player's own luck.
+- **Odds disclosure.** Every egg shows the exact chance of each pet, each tier and each level
+  range, calculated by the same functions that roll the hatch, including the player's own luck.
 - **Paid random items.** Coins can be bought with Robux and coins buy eggs, so eggs count as
   paid random items. Players whose region restricts those (checked with `PolicyService`) don't
   see coin packs or luck items, and the server refuses to sell them.
@@ -68,7 +68,8 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 | Clovers → Luck level | 🍀 clovers on the ground give Luck XP (more in later areas, 10× for golden Lucky Clovers). Every Luck level adds +2% luck, forever |
 | Eggs → pets | Rarity reveals, a NEW! badge, a gem bonus for every new pet, server-wide shout-outs for Legendary and up |
 | Pet Index | A collection book with silhouettes of pets you haven't found yet |
-| Pet tiers | Combine 5 copies into the next tier: ⭐ Golden ×3 → 💎 Diamond ×8 → 💚 Emerald ×20 → 🌀 Void ×50 power, one at a time or all at once |
+| Pet tiers | Hatch a higher tier by luck, or combine 5 copies (any levels) into the next tier: ⭐ Golden ×3 → 💎 Diamond ×8 → 💚 Emerald ×20 → 🌀 Void ×50 power. Crafting keeps the best level used |
+| Pet levels | Every pet hatches at level 1 to 10; each level above 1 adds +10% power. Levels go up to 100 for future levelling |
 | Easy pet management | Duplicates stack into one card (×12), 🔒 lock favourites, one-click Equip Best / Craft All / Delete Weak, auto-delete chosen rarities on hatch, 150 storage |
 | Quality of life | Free Auto Hatch at any egg, Full / Fast / Off hatch animation, Max-buy upgrades, open all gifts at once, ⚙️ Settings for sounds and other players' pets |
 | Areas | Five themed areas, each with a new egg and a bigger multiplier |
@@ -85,10 +86,35 @@ Pacing (from an economy simulation run while tuning, active player, no purchases
 ~3 min, third in ~20 min, first rebirth around 20 min, fourth area in ~1.5–2 h, fifth as a
 multi-session goal.
 
+### How hatching works
+
+Every hatch is three separate rolls, so a great pet needs all three to go your way:
+
+1. **Which pet**, from the egg's weights (`Eggs.luau`).
+2. **Its tier**, from each tier's `HatchWeight` (`Config.Tiers`).
+3. **Its level**, from `Config.Hatch.LevelWeights` (level 1 to 10).
+
+With no extra luck:
+
+| Tier | Chance | | Level | Chance |
+| --- | --- | --- | --- | --- |
+| Normal | 93% | | Lv 1 | 40% |
+| ⭐ Golden | 1 in 18 | | Lv 2–4 | 47% |
+| 💎 Diamond | 1 in 90 | | Lv 5–7 | 10% |
+| 💚 Emerald | 1 in 430 | | Lv 8–10 | 2.2% |
+| 🌀 Void | 1 in 2,687 | | Lv 10 | 1 in 249 |
+
+A pet's power = its base Power × tier multiplier × (1 + 10% per level above 1). Emerald-or-better
+hatches are announced to the server like Legendary pets, and auto-delete never removes a pet that
+hatched above Normal tier.
+
 ### How luck works
 
-Luck multiplies the drop weight of Rare-and-better pets, and the odds shown on every egg
-already include it. It adds up from four sources:
+Luck improves all three rolls, and the odds shown on every egg already include it. For the pet
+it multiplies the weight of Rare-and-better pets. For tier and level it favours the top: the best
+outcome (Void, level 10) gets the full luck multiplier and those below get less, so at 2× luck
+Void goes from 1 in 2,687 to 1 in 1,367 and level 10 from 1 in 249 to 1 in 140. Luck adds up
+from four sources:
 
 ```
 luck = (1 + Luck level × 2% + Egg Luck upgrade × 10% + Lucky Eggs pass 25%) × 2 if a 2x Luck boost is active
@@ -196,10 +222,10 @@ For testing and debugging. It appears as a red **🛠 Admin** button on the righ
 for admins only: everyone in Studio, the place owner (for group games, members at rank 254+), and
 any user ids added to `Config.Admins.UserIds`. Every command is checked again on the server.
 
-It can give coins, gems and any pet at any tier; set luck level, boosts, areas, rebirths and
+It can give coins, gems and any pet at any tier and level; set luck level, boosts, areas, rebirths and
 upgrades; make the daily reward, gifts and quests ready; switch game passes on or off for the
-session; teleport between areas; simulate thousands of hatches to check the odds without spending
-anything; show server info (save size, memory, whether data is saving); save now; and reset your
+session; teleport between areas; simulate thousands of hatches to check the pet, tier and level
+odds without spending anything; show server info (save size, memory, whether data is saving); save now; and reset your
 own data to a new player's (real purchases are kept).
 
 ## Tuning

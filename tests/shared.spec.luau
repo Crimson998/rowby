@@ -189,6 +189,22 @@ test("each pet tier is stronger than the one below and worth crafting", function
 	eq(Formula.tier(0), 1, "tier has a floor")
 end)
 
+test("pet levels multiply power and stay in range", function()
+	eq(Formula.petLevel(nil), 1, "missing level is 1")
+	eq(Formula.petLevel(0), 1, "level has a floor")
+	eq(Formula.petLevel(1e9), Config.PetLevels.MaxLevel, "level is capped")
+	eq(Formula.levelMultiplier(1), 1, "level 1 adds nothing")
+	near(
+		Formula.petPower("Doggy", 2, 5),
+		Pets.Doggy.Power * Config.Tiers[2].Multiplier * (1 + 4 * Config.PetLevels.PowerPerLevel),
+		1e-9,
+		"Golden level 5 power"
+	)
+	assert(#Config.Hatch.LevelWeights <= Config.PetLevels.MaxLevel, "hatch levels must fit under the max level")
+	local data = { Pets = { a = { Id = "Doggy", Tier = 1, Level = 3, Equipped = true } } }
+	near(Formula.petBonus(data), Formula.petPower("Doggy", 1, 3), 1e-9, "equipped bonus uses the level")
+end)
+
 -- Odds ---------------------------------------------------------------------------------------
 
 test("odds always sum to 100% and luck only helps rare pets", function()
@@ -210,6 +226,63 @@ test("odds always sum to 100% and luck only helps rare pets", function()
 				assert(lucky[index].Chance < entry.Chance, egg.Id .. " " .. entry.Id .. " should shrink with luck")
 			end
 		end
+	end
+end)
+
+test("tier and level odds sum to 100% and luck favours the top", function()
+	for _, luck in { 1, 1.5, 3, 12 } do
+		for label, odds in { tiers = Formula.tierOdds(luck), levels = Formula.levelOdds(luck) } do
+			local total = 0
+			for _, chance in odds do
+				total += chance
+			end
+			near(total, 1, 1e-9, label .. " total at luck " .. luck)
+		end
+	end
+	for label, pair in
+		{
+			tiers = { Formula.tierOdds(1), Formula.tierOdds(3) },
+			levels = { Formula.levelOdds(1), Formula.levelOdds(3) },
+		}
+	do
+		local base, lucky = pair[1], pair[2]
+		assert(lucky[1] < base[1], label .. ": luck should make the lowest outcome less likely")
+		assert(lucky[#lucky] > base[#base], label .. ": luck should make the best outcome more likely")
+		-- The best outcome gains the most, relatively.
+		local topGain = lucky[#lucky] / base[#base]
+		for index = 2, #base - 1 do
+			assert(lucky[index] / base[index] <= topGain + 1e-9, label .. " " .. index .. " gains more than the top")
+		end
+	end
+	-- With no luck, the chances are exactly the configured weights.
+	local totalWeight = 0
+	for _, tier in Config.Tiers do
+		totalWeight += tier.HatchWeight
+	end
+	near(Formula.tierOdds(1)[2], Config.Tiers[2].HatchWeight / totalWeight, 1e-12, "Golden chance at luck 1")
+	for index = 2, #Config.Tiers do
+		assert(Config.Tiers[index].HatchWeight < Config.Tiers[index - 1].HatchWeight, "higher tiers must be rarer")
+	end
+	for index = 2, #Config.Hatch.LevelWeights do
+		assert(Config.Hatch.LevelWeights[index] < Config.Hatch.LevelWeights[index - 1], "higher levels must be rarer")
+	end
+end)
+
+test("a hatch rolls pet, tier and level separately, matching the shown odds", function()
+	local rng = Random.new(7)
+	local rolls = 200000
+	local tiers, levels = {}, {}
+	for _ = 1, rolls do
+		local hatch = Formula.rollHatch("Frost", 2, rng)
+		assert(Pets[hatch.Id], "unknown pet " .. tostring(hatch.Id))
+		tiers[hatch.Tier] = (tiers[hatch.Tier] or 0) + 1
+		levels[hatch.Level] = (levels[hatch.Level] or 0) + 1
+	end
+	for tier, chance in Formula.tierOdds(2) do
+		near((tiers[tier] or 0) / rolls, chance, 0.004, "tier " .. tier)
+	end
+	for level, chance in Formula.levelOdds(2) do
+		near((levels[level] or 0) / rolls, chance, 0.004, "level " .. level)
 	end
 end)
 

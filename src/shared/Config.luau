@@ -44,13 +44,16 @@ Config.Pets = {
 -- Pet tiers, lowest first. CraftCopies pets of a tier combine into one of the next tier, and a
 -- pet's power is multiplied by its tier's Multiplier. Tier 1 uses the pet's own colours; higher
 -- tiers repaint it (or use a "<PetId>_<Name>" custom model, see CustomModels.luau).
+-- Hatching rolls the tier separately from the pet: HatchWeight is each tier's relative chance
+-- (see Config.Hatch for how luck changes it).
 local rgb = Color3.fromRGB
 Config.Tiers = {
-	{ Name = "Normal", Icon = "", Multiplier = 1 },
+	{ Name = "Normal", Icon = "", Multiplier = 1, HatchWeight = 1000 },
 	{
 		Name = "Golden",
 		Icon = "⭐",
 		Multiplier = 3,
+		HatchWeight = 60,
 		Color = rgb(255, 200, 45),
 		Accent = rgb(255, 240, 160),
 		Reflectance = 0.25,
@@ -59,6 +62,7 @@ Config.Tiers = {
 		Name = "Diamond",
 		Icon = "💎",
 		Multiplier = 8,
+		HatchWeight = 12,
 		Color = rgb(165, 235, 255),
 		Accent = rgb(255, 255, 255),
 		Reflectance = 0.4,
@@ -68,6 +72,7 @@ Config.Tiers = {
 		Name = "Emerald",
 		Icon = "💚",
 		Multiplier = 20,
+		HatchWeight = 2.5,
 		Color = rgb(35, 205, 115),
 		Accent = rgb(185, 255, 215),
 		Reflectance = 0.35,
@@ -77,11 +82,32 @@ Config.Tiers = {
 		Name = "Void",
 		Icon = "🌀",
 		Multiplier = 50,
+		HatchWeight = 0.4,
 		Color = rgb(30, 12, 50),
 		Accent = rgb(185, 95, 255),
 		Reflectance = 0.1,
 		NeonAccent = true,
 	},
+}
+
+-- Every pet has a level that multiplies its power. Hatching rolls it (1 to #Hatch.LevelWeights);
+-- MaxLevel leaves room for levelling pets up later.
+Config.PetLevels = {
+	MaxLevel = 100,
+	PowerPerLevel = 0.1,
+}
+
+--[[
+	A hatch is three separate rolls: which pet (the egg's weights), its tier (Config.Tiers
+	HatchWeight) and its level (LevelWeights, level 1 first). Getting all three high at once is
+	what makes a great pet rare.
+
+	Luck improves every roll. For pets it multiplies the weight of Rare-and-better pets. For tiers
+	and levels it favours the top: the best outcome's weight is multiplied by the full luck, the
+	lowest by nothing, and those between by part of it (luck ^ (step / top step)).
+]]
+Config.Hatch = {
+	LevelWeights = { 1000, 600, 360, 216, 130, 78, 47, 28, 17, 10 },
 }
 
 Config.Rebirth = {

@@ -36,19 +36,28 @@ function Formula.tier(tier: number?): number
 	return math.clamp(math.floor(tonumber(tier) or 1), 1, #Config.Tiers)
 end
 
-function Formula.petPower(petId: string, tier: number?): number
+-- A pet's level (1 … Config.PetLevels.MaxLevel). Missing or invalid levels count as 1.
+function Formula.petLevel(level: number?): number
+	return math.clamp(math.floor(tonumber(level) or 1), 1, Config.PetLevels.MaxLevel)
+end
+
+function Formula.levelMultiplier(level: number?): number
+	return 1 + (Formula.petLevel(level) - 1) * Config.PetLevels.PowerPerLevel
+end
+
+function Formula.petPower(petId: string, tier: number?, level: number?): number
 	local pet = Pets[petId]
 	if not pet then
 		return 0
 	end
-	return pet.Power * Config.Tiers[Formula.tier(tier)].Multiplier
+	return pet.Power * Config.Tiers[Formula.tier(tier)].Multiplier * Formula.levelMultiplier(level)
 end
 
 function Formula.petBonus(data): number
 	local total = 0
 	for _, pet in data.Pets do
 		if pet.Equipped then
-			total += Formula.petPower(pet.Id, pet.Tier)
+			total += Formula.petPower(pet.Id, pet.Tier, pet.Level)
 		end
 	end
 	return total
@@ -209,16 +218,67 @@ function Formula.eggOdds(eggId: string, luck: number): Odds
 	return odds
 end
 
-function Formula.rollEgg(eggId: string, luck: number, rng: Random): string
-	local odds = Formula.eggOdds(eggId, luck)
+-- Picks an index from a list of chances that sum to 1.
+local function pick(chances: { number }, rng: Random): number
 	local roll = rng:NextNumber()
-	for _, entry in odds do
-		roll -= entry.Chance
+	for index, chance in chances do
+		roll -= chance
 		if roll <= 0 then
-			return entry.Id
+			return index
 		end
 	end
-	return odds[1].Id
+	return 1
+end
+
+-- Turns weights (worst outcome first) into chances, with luck favouring the best outcomes:
+-- weight i is multiplied by luck ^ ((i - 1) / (#weights - 1)). See Config.Hatch.
+local function luckyChances(weights: { number }, luck: number): { number }
+	local top = math.max(#weights - 1, 1)
+	local scaled = {}
+	local total = 0
+	for index, weight in weights do
+		local value = weight * luck ^ ((index - 1) / top)
+		scaled[index] = value
+		total += value
+	end
+	for index, value in scaled do
+		scaled[index] = value / total
+	end
+	return scaled
+end
+
+function Formula.rollEgg(eggId: string, luck: number, rng: Random): string
+	local odds = Formula.eggOdds(eggId, luck)
+	local chances = {}
+	for index, entry in odds do
+		chances[index] = entry.Chance
+	end
+	return odds[pick(chances, rng)].Id
+end
+
+-- Chance of hatching each tier (index = tier), after luck. Shown on every egg.
+function Formula.tierOdds(luck: number): { number }
+	local weights = {}
+	for index, tier in Config.Tiers do
+		weights[index] = tier.HatchWeight
+	end
+	return luckyChances(weights, luck)
+end
+
+-- Chance of hatching at each level (index = level), after luck. Shown on every egg.
+function Formula.levelOdds(luck: number): { number }
+	return luckyChances(Config.Hatch.LevelWeights, luck)
+end
+
+export type Hatch = { Id: string, Tier: number, Level: number }
+
+-- One hatch = three separate rolls: the pet, its tier and its level.
+function Formula.rollHatch(eggId: string, luck: number, rng: Random): Hatch
+	return {
+		Id = Formula.rollEgg(eggId, luck, rng),
+		Tier = pick(Formula.tierOdds(luck), rng),
+		Level = pick(Formula.levelOdds(luck), rng),
+	}
 end
 
 function Formula.rebirthCost(rebirths: number): number

@@ -45,6 +45,10 @@ local function run(name: string, ...: any)
 	end
 	output.Text = (if success then "✅ " else "❌ ") .. tostring(message or name)
 	output.TextColor3 = if success then Theme.Colors.Text else Theme.Colors.Red
+	local frame = output.Parent
+	if frame and frame:IsA("ScrollingFrame") then
+		frame.CanvasPosition = Vector2.zero
+	end
 end
 
 function AdminWindow.build(): ()
@@ -59,15 +63,20 @@ function AdminWindow.build(): ()
 		Parent = body,
 	}, { Util.list(Enum.FillDirection.Vertical, 6) })
 
-	local outputFrame = Util.new("Frame", {
+	-- Scrolls, since some results (like hatch simulations) run to many lines.
+	local outputFrame = Util.new("ScrollingFrame", {
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 118),
 		BackgroundColor3 = Theme.Colors.Panel,
+		ScrollBarThickness = 6,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
 		Parent = body,
 	}, { Util.corner(12), Util.padding(8) })
 	output = Util.label({
-		Size = UDim2.fromScale(1, 1),
+		Size = UDim2.new(1, -8, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		Text = "Admin commands change your own data. Results show here.",
 		TextScaled = false,
 		TextSize = 15,
@@ -208,8 +217,9 @@ function AdminWindow.build(): ()
 		return (if tier.Icon ~= "" then tier.Icon .. " " else "") .. tier.Name, tier.Color
 	end)
 	local countBox = numberBox(pets, "How many", "1")
+	local levelBox = numberBox(pets, "Level", "1")
 	button(pets, "Give pet", Theme.Colors.Green, function()
-		run("GivePet", petOrder[petIndex()], tierIndex(), countBox.Text)
+		run("GivePet", petOrder[petIndex()], tierIndex(), countBox.Text, levelBox.Text)
 	end)
 	button(pets, "Give every pet", Theme.Colors.Green, function()
 		run("GiveEveryPet")
