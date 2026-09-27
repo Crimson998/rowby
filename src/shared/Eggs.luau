@@ -30,7 +30,7 @@ local List: { Egg } = {
 			{ Id = "Kitty", Weight = 27 },
 			{ Id = "Bunny", Weight = 9 },
 			{ Id = "Bumblebee", Weight = 1.9 },
-			{ Id = "CloverSprite", Weight = 0.1 },
+			{ Id = "Eagle", Weight = 0.08 },
 		},
 	},
 	{

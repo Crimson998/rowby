@@ -58,8 +58,8 @@ local Pets: { [string]: Pet } = {
 		Accent = rgb(45, 45, 45),
 		Features = { "Wings", "Antenna" },
 	},
-	CloverSprite = {
-		Name = "Clover Sprite",
+	Eagle = {
+		Name = "Eagle",
 		Rarity = "Legendary",
 		Power = 3,
 		Color = rgb(90, 220, 110),
