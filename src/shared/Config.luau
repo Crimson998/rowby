@@ -46,6 +46,8 @@ Config.Pets = {
 -- tiers repaint it (or use a "<PetId>_<Name>" custom model, see CustomModels.luau).
 -- Hatching rolls the tier separately from the pet: HatchWeight is each tier's relative chance
 -- (see Config.Hatch for how luck changes it).
+-- MaterialVariant (optional) is the name of a MaterialVariant in MaterialService that repainted
+-- pets of that tier use, e.g. a sparkly gold. Without one they get smooth plastic + Reflectance.
 local rgb = Color3.fromRGB
 Config.Tiers = {
 	{ Name = "Normal", Icon = "", Multiplier = 1, HatchWeight = 1000 },
@@ -54,6 +56,7 @@ Config.Tiers = {
 		Icon = "⭐",
 		Multiplier = 3,
 		HatchWeight = 60,
+		MaterialVariant = "PetGold",
 		Color = rgb(255, 200, 45),
 		Accent = rgb(255, 240, 160),
 		Reflectance = 0.25,

@@ -260,6 +260,15 @@ function PetModels.pet(petId: string, tier: number?): Model
 		end
 	end
 
+	-- A tier with its own material (Config.Tiers MaterialVariant) uses it on the tier-coloured parts.
+	if upgraded and tierDef.MaterialVariant then
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("BasePart") and descendant.Color == color then
+				CustomModels.paintPart(descendant, tierDef)
+			end
+		end
+	end
+
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") and descendant ~= body then
 			local weld = Instance.new("WeldConstraint")

@@ -8,10 +8,13 @@
 	- The model's front is the direction its pivot faces (the pivot's LookVector, -Z).
 	- It is resized to fit, unless you set a boolean attribute KeepScale = true on it.
 	- Higher tiers use "<PetId>_<Tier>" if it exists (e.g. "Doggy_Golden", "Doggy_Diamond",
-	  "Doggy_Void"), otherwise the normal model is repainted in that tier's colours.
+	  "Doggy_Void"), otherwise the normal model is repainted in that tier's colours. Repainting
+	  strips textures (SurfaceAppearance, Decals, Textures, MeshPart and SpecialMesh textures)
+	  and, if the tier names a MaterialVariant (Config.Tiers), uses that material.
 	- Scripts inside the model are removed, so Toolbox models can't run code.
 ]]
 
+local MaterialService = game:GetService("MaterialService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(script.Parent.Config)
@@ -23,16 +26,66 @@ local function find(folderName: string, name: string): Instance?
 	return folder and folder:FindFirstChild(name)
 end
 
+-- "Pet Gold", "petgold" and "PetGold" all match, so small naming slips don't break it.
+local function simplify(name: string): string
+	return (string.gsub(string.lower(name), "[%s_%-]", ""))
+end
+
+local warned: { [string]: boolean } = {}
+
+-- The MaterialVariant in MaterialService with this name, or nil (with one warning) if missing.
+local function findVariant(name: string): MaterialVariant?
+	local wanted = simplify(name)
+	for _, descendant in MaterialService:GetDescendants() do
+		if descendant:IsA("MaterialVariant") and simplify(descendant.Name) == wanted then
+			return descendant
+		end
+	end
+	if not warned[name] then
+		warned[name] = true
+		warn(
+			string.format(
+				'[CustomModels] No MaterialVariant named "%s" in MaterialService; using plain colour instead.',
+				name
+			)
+		)
+	end
+	return nil
+end
+
+-- Colours one part in a tier's look: its colour plus its MaterialVariant (if it has one) or
+-- smooth plastic with the tier's shine.
+function CustomModels.paintPart(part: BasePart, tier)
+	part.Color = tier.Color
+	local variant = if tier.MaterialVariant then findVariant(tier.MaterialVariant) else nil
+	if variant then
+		part.Material = variant.BaseMaterial
+		part.MaterialVariant = variant.Name
+		part.Reflectance = 0
+	else
+		part.Material = Enum.Material.SmoothPlastic
+		part.MaterialVariant = ""
+		part.Reflectance = tier.Reflectance or 0.3
+	end
+end
+
+-- Repaints a whole model in a tier's look. Anything that would hide the part colour is removed
+-- first: SurfaceAppearances, Decals and Textures, MeshPart and SpecialMesh textures, and
+-- unions that ignore their part colour.
 local function paintTier(model: Model, tier)
 	for _, descendant in model:GetDescendants() do
-		if descendant:IsA("SurfaceAppearance") then
+		if descendant:IsA("SurfaceAppearance") or descendant:IsA("Decal") then
+			-- Decal also covers Texture, which inherits from it.
 			descendant:Destroy()
+		elseif descendant:IsA("SpecialMesh") then
+			descendant.TextureId = ""
+			descendant.VertexColor = Vector3.one
 		elseif descendant:IsA("BasePart") then
-			descendant.Color = tier.Color
-			descendant.Material = Enum.Material.SmoothPlastic
-			descendant.Reflectance = tier.Reflectance or 0.3
+			CustomModels.paintPart(descendant, tier)
 			if descendant:IsA("MeshPart") then
 				descendant.TextureID = ""
+			elseif descendant:IsA("PartOperation") then
+				descendant.UsePartColor = true
 			end
 		end
 	end

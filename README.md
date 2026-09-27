@@ -177,6 +177,7 @@ Anything you don't replace keeps its generated look.
 | --- | --- | --- |
 | A pet | `ReplicatedStorage > PetModels` | the pet id, e.g. `Doggy` |
 | A pet's tier versions (optional) | `ReplicatedStorage > PetModels` | `Doggy_Golden`, `Doggy_Diamond`, `Doggy_Emerald`, `Doggy_Void` (otherwise the normal model is repainted in the tier's colours) |
+| A tier's material (optional) | `MaterialService` | a MaterialVariant, named in that tier's `MaterialVariant` in `Config.Tiers` (Golden uses `PetGold`) |
 | An egg (world stand and hatch animation) | `ReplicatedStorage > EggModels` | the egg id, e.g. `Meadow` |
 
 **If you edit in Studio only:** build the place once, then drag your models into those folders in
