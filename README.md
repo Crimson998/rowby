@@ -194,6 +194,10 @@ What the game does with your model:
   eggs. Add a boolean attribute `KeepScale` = true to the model to keep your own size.
 - **Facing:** the pet faces the way the model's pivot faces (its front / LookVector). If a pet
   walks backwards, rotate the model's pivot in Studio (Model tab → Edit Pivot).
+- **Tiers:** without a `Doggy_Golden`-style model, higher tiers repaint your model in the tier's
+  colour (and material). Decals such as faces are kept. Parts named like a face (Eye, Pupil,
+  Face, Mouth, Nose, Tongue, Teeth, Cheek) keep their colour too; for anything else, add a
+  boolean attribute `KeepColor` = true to the part.
 - **Safety:** scripts inside the model are deleted, so free Toolbox models can't run code.
 - **Typos:** the server warns in Output about any model whose name doesn't match a pet or egg id.
 

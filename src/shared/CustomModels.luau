@@ -9,8 +9,10 @@
 	- It is resized to fit, unless you set a boolean attribute KeepScale = true on it.
 	- Higher tiers use "<PetId>_<Tier>" if it exists (e.g. "Doggy_Golden", "Doggy_Diamond",
 	  "Doggy_Void"), otherwise the normal model is repainted in that tier's colours. Repainting
-	  strips textures (SurfaceAppearance, Decals, Textures, MeshPart and SpecialMesh textures)
-	  and, if the tier names a MaterialVariant (Config.Tiers), uses that material.
+	  strips textures (SurfaceAppearance, Textures, MeshPart and SpecialMesh textures) and, if
+	  the tier names a MaterialVariant (Config.Tiers), uses that material. Decals (faces) stay.
+	- Parts named like a face (Eye, Pupil, Face, Mouth, Nose, Tongue, Teeth, Cheek), or any part
+	  with a boolean attribute KeepColor = true, keep their own look on every tier.
 	- Scripts inside the model are removed, so Toolbox models can't run code.
 ]]
 
@@ -69,13 +71,33 @@ function CustomModels.paintPart(part: BasePart, tier)
 	end
 end
 
+local FACE_WORDS = { "eye", "pupil", "face", "mouth", "nose", "tongue", "teeth", "cheek" }
+
+-- Parts that keep their own look on every tier: face parts by name, or KeepColor = true.
+local function keepsLook(instance: Instance): boolean
+	if instance:GetAttribute("KeepColor") == true then
+		return true
+	end
+	local name = string.lower(instance.Name)
+	for _, word in FACE_WORDS do
+		if string.find(name, word, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
 -- Repaints a whole model in a tier's look. Anything that would hide the part colour is removed
--- first: SurfaceAppearances, Decals and Textures, MeshPart and SpecialMesh textures, and
--- unions that ignore their part colour.
+-- first: SurfaceAppearances, tiling Textures, MeshPart and SpecialMesh textures, and unions that
+-- ignore their part colour. Decals are kept, since they're usually faces.
 local function paintTier(model: Model, tier)
 	for _, descendant in model:GetDescendants() do
-		if descendant:IsA("SurfaceAppearance") or descendant:IsA("Decal") then
-			-- Decal also covers Texture, which inherits from it.
+		local part = descendant.Parent
+		local onKeptPart = part ~= nil and part:IsA("BasePart") and keepsLook(part)
+		if onKeptPart or keepsLook(descendant) then
+			continue
+		end
+		if descendant:IsA("SurfaceAppearance") or descendant:IsA("Texture") then
 			descendant:Destroy()
 		elseif descendant:IsA("SpecialMesh") then
 			descendant.TextureId = ""
