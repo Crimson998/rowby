@@ -71,6 +71,55 @@ local function claimQuest(profile, slot)
 	DataService.notify(profile.Player, "📜 Quest complete! 💎 " .. quest.Gems, "Reward")
 end
 
+-- Weekly quests reuse the same templates as Quests, scaled up, refreshed every PeriodDays instead
+-- of one at a time.
+local function newWeeklyQuest(profile, exclude: { [string]: boolean })
+	local candidates = {}
+	for _, template in Quests.Templates do
+		if not exclude[template.Stat] then
+			table.insert(candidates, template)
+		end
+	end
+	local template = candidates[rng:NextInteger(1, #candidates)]
+	local data = profile.Data
+	return {
+		Stat = template.Stat,
+		Goal = math.floor(template.Goal(data, profile.Session) * Config.Weekly.GoalMultiplier),
+		Start = data.Stats[template.Stat] or 0,
+		Gems = template.Gems * Config.Weekly.GemMultiplier,
+	}
+end
+
+local function fillWeekly(profile)
+	local weekly = profile.Data.Weekly
+	local now = os.time()
+	if weekly.Start > 0 and now - weekly.Start < Config.Weekly.PeriodDays * 86400 then
+		return
+	end
+	local used = {}
+	local quests = {}
+	while #quests < Config.Weekly.Slots do
+		local quest = newWeeklyQuest(profile, used)
+		used[quest.Stat] = true
+		table.insert(quests, quest)
+	end
+	weekly.Quests = quests
+	weekly.Start = now
+	DataService.change(profile, "Weekly")
+end
+
+local function claimWeekly(profile, slot)
+	local data = profile.Data
+	local quest = type(slot) == "number" and data.Weekly.Quests[slot]
+	if not quest or quest.Claimed or Quests.progress(data, quest) < quest.Goal then
+		return
+	end
+	quest.Claimed = true
+	DataService.addGems(profile, quest.Gems)
+	DataService.change(profile, "Weekly")
+	DataService.notify(profile.Player, "📅 Weekly quest complete! 💎 " .. quest.Gems, "Reward")
+end
+
 local function claimDaily(profile)
 	local data = profile.Data
 	local now = os.time()
@@ -148,9 +197,11 @@ local function redeemCode(player: Player, code): (boolean, string)
 end
 
 RewardService.fillQuests = fillQuests
+RewardService.fillWeekly = fillWeekly
 
 function RewardService.Init()
 	DataService.onLoaded(fillQuests)
+	DataService.onLoaded(fillWeekly)
 	DataService.onRelease(function(profile)
 		lastCodeAttempt[profile.Player] = nil
 	end)
@@ -173,6 +224,7 @@ function RewardService.Start()
 		end
 	end)
 	Actions.register("ClaimQuest", claimQuest)
+	Actions.register("ClaimWeekly", claimWeekly)
 	Net.func("RedeemCode").OnServerInvoke = redeemCode
 
 	task.spawn(function()
@@ -181,6 +233,7 @@ function RewardService.Start()
 			for player, profile in DataService.all() do
 				local data = profile.Data
 				data.Stats.TimePlayed += 1
+				fillWeekly(profile)
 				local boosts = data.Boosts
 				for kind, remaining in boosts do
 					if remaining > 0 then

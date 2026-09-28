@@ -30,8 +30,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **Pet abilities** (M): some pets gain a perk, such as auto-collecting clovers, faster hatching or bonus gems. Why: pets matter beyond one power number.
 - **Pet set bonuses** (M): pets belong to sets (by area, family or element); equipping 2, 4 or a full set unlocks stacking bonuses, like Diablo item sets: more coins, more luck, then a unique perk. Why: rewards building a team instead of just equipping the strongest pets, and gives older pets a use.
 - **Rebirth raises the luck cap** (M): the Luck level cap starts lower and grows with each rebirth; clovers collected at the cap are wasted, so capping out is the signal to rebirth. Why: links the two core tracks (coins and luck) and gives rebirth a clear purpose beyond a coin multiplier.
-- **Weekly quests** (S): three bigger weekly goals alongside the daily quests. Why: a reason to come back across the week.
-- **Offline earnings** (S): coins for time away at a reduced rate, capped at a few hours. Why: rewards returning without punishing breaks.
 - **Rebirth shop** (M): rebirth tokens spent on permanent perks, such as storage or auto-collect. Why: deepens the long-term loop.
 
 ### Later
@@ -57,3 +55,5 @@ Noted to fix later; not features.
 - **Index rewards**: discovering every pet in an area's egg completes that area's Pet Index for a permanent +15% coin bonus, stacking per area; shown in 🐾 Pets and 📊 Stats, with a toast when an area completes.
 - **Hatch pity**: an egg guarantees a Rare-or-better pet once 40 hatches pass without one, resetting the counter; progress ("Pity: N to guaranteed Rare+") shows on every egg's odds board, and a toast fires when the guarantee kicks in.
 - **Clover streaks**: grabbing clovers within 2.5 seconds of the last one builds a streak that multiplies Luck XP by up to 2x; a longer gap resets it to normal.
+- **Weekly quests**: three bigger goals (6x the daily goal, 5x the gems) alongside the daily Quests, refreshed every 7 days; shown in a new section of the 📜 Quests window with a countdown to the next refresh.
+- **Offline earnings**: coins for time away, at 15% of your active earning rate, capped at 3 hours and skipped for disconnects under 2 minutes; granted with a toast on your next join.

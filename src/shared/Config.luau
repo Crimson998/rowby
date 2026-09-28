@@ -210,6 +210,23 @@ Config.Codes = {
 	LUCKY = { LuckBoostMinutes = 15 },
 }
 
+-- Bigger goals alongside the daily Quests (see Quests.luau), refreshed every PeriodDays instead
+-- of one at a time. Reuses the same quest templates, scaled up.
+Config.Weekly = {
+	Slots = 3,
+	PeriodDays = 7,
+	GoalMultiplier = 6,
+	GemMultiplier = 5,
+}
+
+-- Coins for time away, at a reduced rate so it never beats playing. Short disconnects (a reconnect,
+-- a server hop) below MinSeconds don't pay out.
+Config.Offline = {
+	MinSeconds = 120,
+	MaxHours = 3,
+	Rate = 0.15,
+}
+
 Config.RarityOrder = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret" }
 
 -- Luck multiplies the weight of every rarity marked Lucky. Announce broadcasts the hatch server-wide.

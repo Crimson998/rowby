@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared.Config)
 local Format = require(Shared.Format)
 local Quests = require(Shared.Quests)
 
@@ -12,13 +13,22 @@ local Windows = require(script.Parent.Windows)
 
 local QuestsWindow = {}
 
+local NAME = "Quests"
+local DAILY_ROW = 86
+local DAILY_HEIGHT = Quests.Slots * 96
+local WEEKLY_ROW = 70
+local WEEKLY_TOP = DAILY_HEIGHT + 30
+-- Windows.create's body is size.Y - 86 tall (header + margins); leave room for the footer below
+-- the weekly rows too.
+local BODY_HEIGHT = WEEKLY_TOP + Config.Weekly.Slots * WEEKLY_ROW + 40
+
 function QuestsWindow.build()
-	local body = Windows.create("Quests", "📜 Quests", Theme.Colors.Purple, Vector2.new(560, 400))
+	local body = Windows.create(NAME, "📜 Quests", Theme.Colors.Purple, Vector2.new(560, BODY_HEIGHT + 86))
 
 	local rows = {}
 	for slot = 1, Quests.Slots do
 		local row = Util.new("Frame", {
-			Size = UDim2.new(1, 0, 0, 86),
+			Size = UDim2.new(1, 0, 0, DAILY_ROW),
 			Position = UDim2.fromOffset(0, (slot - 1) * 96),
 			BackgroundColor3 = Theme.Colors.Panel,
 			Parent = body,
@@ -53,6 +63,52 @@ function QuestsWindow.build()
 		rows[slot] = { Icon = icon, Text = text, SetProgress = setProgress, Claim = claim }
 	end
 
+	Util.label({
+		Position = UDim2.fromOffset(0, DAILY_HEIGHT + 2),
+		Size = UDim2.new(1, 0, 0, 22),
+		Text = "📅 Weekly quests",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = body,
+	})
+
+	local weeklyRows = {}
+	for slot = 1, Config.Weekly.Slots do
+		local row = Util.new("Frame", {
+			Size = UDim2.new(1, 0, 0, WEEKLY_ROW - 8),
+			Position = UDim2.fromOffset(0, WEEKLY_TOP + (slot - 1) * WEEKLY_ROW),
+			BackgroundColor3 = Theme.Colors.Panel,
+			Parent = body,
+		}, { Util.corner(12) })
+		local icon = Util.label({
+			Size = UDim2.fromOffset(44, 44),
+			Position = UDim2.fromOffset(8, 9),
+			Text = "",
+			Parent = row,
+		})
+		local text = Util.label({
+			Size = UDim2.new(1, -210, 0, 22),
+			Position = UDim2.fromOffset(60, 6),
+			Text = "",
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = row,
+		})
+		local _, setProgress = Util.bar({
+			Size = UDim2.new(1, -210, 0, 20),
+			Position = UDim2.fromOffset(60, 32),
+			Color = Theme.Colors.Purple,
+			Parent = row,
+		})
+		local claim = Util.button({
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -8, 0.5, 0),
+			Size = UDim2.fromOffset(130, WEEKLY_ROW - 16),
+			Parent = row,
+		}, function()
+			Actions("ClaimWeekly", slot)
+		end)
+		weeklyRows[slot] = { Icon = icon, Text = text, SetProgress = setProgress, Claim = claim }
+	end
+
 	local footer = Util.label({
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
@@ -62,7 +118,7 @@ function QuestsWindow.build()
 		Parent = body,
 	})
 
-	State.watch({ "Quests", "Stats", "QuestsCompleted" }, function()
+	local function refresh()
 		local data = State.Data
 		for slot, row in rows do
 			local quest = data.Quests[slot]
@@ -78,7 +134,46 @@ function QuestsWindow.build()
 			row.Claim.Text = if done then "Claim 💎" .. quest.Gems else "💎 " .. quest.Gems
 			row.Claim.BackgroundColor3 = if done then Theme.Colors.Green else Theme.Colors.Disabled
 		end
-		footer.Text = "Quests completed: " .. data.QuestsCompleted .. "  ·  New quests appear as you finish them!"
+
+		local weekly = data.Weekly
+		for slot, row in weeklyRows do
+			local quest = weekly.Quests[slot]
+			if not quest then
+				continue
+			end
+			local template = Quests.ByStat[quest.Stat]
+			local progress = Quests.progress(data, quest)
+			row.Icon.Text = template.Icon
+			row.Text.Text = string.format(template.Text, Format.number(quest.Goal))
+			row.SetProgress(progress / quest.Goal, Format.number(progress) .. " / " .. Format.number(quest.Goal))
+			local done = progress >= quest.Goal
+			if quest.Claimed then
+				row.Claim.Text = "✅ Claimed"
+				row.Claim.BackgroundColor3 = Theme.Colors.Disabled
+			elseif done then
+				row.Claim.Text = "Claim 💎" .. quest.Gems
+				row.Claim.BackgroundColor3 = Theme.Colors.Green
+			else
+				row.Claim.Text = "💎 " .. quest.Gems
+				row.Claim.BackgroundColor3 = Theme.Colors.Disabled
+			end
+		end
+
+		local resetIn = math.max(weekly.Start + Config.Weekly.PeriodDays * 86400 - os.time(), 0)
+		footer.Text = "Quests completed: "
+			.. data.QuestsCompleted
+			.. "  ·  New weekly quests in "
+			.. Format.time(resetIn)
+	end
+
+	State.watch({ "Quests", "Stats", "QuestsCompleted", "Weekly" }, refresh)
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			if Windows.isOpen(NAME) then
+				refresh()
+			end
+		end
 	end)
 end
 

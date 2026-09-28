@@ -62,6 +62,10 @@ local TEMPLATE = {
 	Daily = { Last = 0, Streak = 0 },
 	Quests = {},
 	QuestsCompleted = 0,
+	-- Bigger goals that refresh every Config.Weekly.PeriodDays; Start is os.time() when rolled.
+	Weekly = { Quests = {}, Start = 0 },
+	-- os.time() when the player last left; used to grant offline earnings on their next join.
+	LastSeen = 0,
 	Stats = {
 		Taps = 0,
 		CoinsEarned = 0,

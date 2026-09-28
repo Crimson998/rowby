@@ -136,6 +136,26 @@ function EconomyService.unlockZone(profile, zoneIndex: number)
 	effectRemote:FireClient(profile.Player, "ZoneUnlocked", zoneIndex)
 end
 
+-- Coins for time away since the player's last session, at a reduced rate (Config.Offline).
+local function grantOfflineEarnings(profile)
+	local data = profile.Data
+	if data.LastSeen <= 0 then
+		return
+	end
+	local away = os.time() - data.LastSeen
+	if away < Config.Offline.MinSeconds then
+		return
+	end
+	local seconds = math.min(away, Config.Offline.MaxHours * 3600) * Config.Offline.Rate
+	local coins = Formula.rewardCoins(data, profile.Session, seconds)
+	DataService.addCoins(profile, coins, false)
+	DataService.notify(
+		profile.Player,
+		"💤 Welcome back! +🪙 " .. Format.number(coins) .. " while you were away.",
+		"Reward"
+	)
+end
+
 local function setupCharacter(profile)
 	local player = profile.Player
 	player.CharacterAdded:Connect(function(character)
@@ -154,8 +174,10 @@ end
 
 function EconomyService.Init()
 	DataService.onLoaded(setupCharacter)
+	DataService.onLoaded(grantOfflineEarnings)
 	DataService.onRelease(function(profile)
 		buckets[profile.Player] = nil
+		profile.Data.LastSeen = os.time()
 	end)
 end
 

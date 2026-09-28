@@ -48,6 +48,8 @@ local function freshData()
 		Daily = { Last = 0, Streak = 0 },
 		Quests = {},
 		QuestsCompleted = 0,
+		Weekly = { Quests = {}, Start = 0 },
+		LastSeen = 0,
 		Stats = { Taps = 0, CoinsEarned = 0, EggsHatched = 0, OrbsCollected = 0 },
 	}
 end
@@ -164,6 +166,28 @@ test("reward tables only use known fields", function()
 		eq(code, string.upper(code), "codes are stored upper-case")
 		check(reward, "code " .. code)
 	end
+end)
+
+test("weekly quests scale up daily quest templates", function()
+	assert(Config.Weekly.Slots > 0, "weekly slots")
+	assert(Config.Weekly.PeriodDays > 0, "weekly period")
+	assert(Config.Weekly.GoalMultiplier > 1, "weekly goals must be bigger than daily")
+	assert(Config.Weekly.GemMultiplier > 1, "weekly rewards must be bigger than daily")
+	assert(Config.Weekly.Slots <= #Quests.Templates, "not enough templates to fill weekly slots without repeats")
+end)
+
+test("offline earnings pay less than playing, and are capped", function()
+	assert(Config.Offline.Rate > 0 and Config.Offline.Rate < 1, "offline rate must be a fraction of active play")
+	assert(Config.Offline.MaxHours > 0, "offline cap")
+	assert(Config.Offline.MinSeconds >= 0, "offline minimum away time")
+	local data = freshData()
+	local session = freshSession()
+	local capped = Config.Offline.MaxHours * 3600 * Config.Offline.Rate
+	local uncapped = (Config.Offline.MaxHours + 1) * 3600 * Config.Offline.Rate
+	assert(
+		Formula.rewardCoins(data, session, uncapped) > Formula.rewardCoins(data, session, capped),
+		"more away time pays more up to the cap"
+	)
 end)
 
 test("auto-delete can never remove Legendary or rarer pets", function()
