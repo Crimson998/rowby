@@ -48,6 +48,10 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 Noted to fix later; not features.
 
 - **Material not displaying properly**: the Golden tier's `PetGold` MaterialVariant doesn't show correctly on repainted custom pet models (see `CustomModels.paintPart`).
+- **Hatch pity is shared across all eggs**: one counter (`HatchPity`) covers every egg, so a player can build up misses on the cheap Meadow egg and spend the guaranteed Rare-or-better on an expensive egg. It should be one counter per egg.
+- **Clover streaks do nothing early in the Meadow**: clovers there give 1 Luck XP and the streak bonus is rounded (`WorldService.collectOrb`), so the first 6 clovers in a streak still give 1 XP before it jumps to 2. Use random rounding or fractional XP so every step counts.
+- **Unclaimed weekly quests are lost**: a finished but unclaimed weekly quest disappears when the week refreshes (`RewardService.fillWeekly`). Claim finished quests automatically on refresh.
+- **README is out of date**: it doesn't describe index rewards, hatch pity, clover streaks, weekly quests or offline earnings.
 
 ## Shipped
 
