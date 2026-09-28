@@ -33,14 +33,16 @@ function Util.new(className: string, props: { [string]: any }?, children: { Inst
 end
 
 function Util.corner(radius: number?): UICorner
-	return Util.new("UICorner", { CornerRadius = UDim.new(0, radius or 12) })
+	return Util.new("UICorner", { CornerRadius = UDim.new(0, radius or Theme.Radius) })
 end
 
+-- Outline around a frame or button. The default is a soft dark edge; pass a colour to highlight.
 function Util.stroke(color: Color3?, thickness: number?): UIStroke
 	return Util.new("UIStroke", {
 		Name = "Border",
 		Color = color or Theme.Colors.Stroke,
-		Thickness = thickness or 3,
+		Thickness = math.min(thickness or Theme.StrokeWidth, Theme.StrokeWidth + 1),
+		Transparency = if color then 0 else 0.25,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 	})
 end
@@ -49,9 +51,30 @@ function Util.textStroke(thickness: number?): UIStroke
 	return Util.new("UIStroke", {
 		Name = "TextStroke",
 		Color = Theme.Colors.Stroke,
-		Thickness = thickness or 2,
+		Thickness = thickness or 1.5,
+		Transparency = 0.15,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
 	})
+end
+
+-- A rounded background card for grouping HUD elements.
+function Util.panel(props: { [string]: any }, children: { Instance }?): Frame
+	local panel = Util.new("Frame", {
+		BackgroundColor3 = Theme.Colors.Panel,
+		BackgroundTransparency = 0.08,
+	}, { Util.corner(), Util.stroke() })
+	for key, value in props do
+		if key ~= "Parent" then
+			(panel :: any)[key] = value
+		end
+	end
+	if children then
+		for _, child in children do
+			child.Parent = panel
+		end
+	end
+	panel.Parent = props.Parent
+	return panel
 end
 
 function Util.padding(pixels: number): UIPadding
@@ -124,9 +147,15 @@ function Util.button(props: { [string]: any }, onClick: (() -> ())?): TextButton
 		TextScaled = true,
 		Text = "",
 	}, {
-		Util.corner(props.CornerRadius or 12),
+		Util.corner(props.CornerRadius or Theme.Radius),
 		Util.stroke(),
 		Util.textStroke(),
+		-- A soft top-to-bottom sheen, so buttons read as pressable without heavy outlines.
+		Util.new("UIGradient", {
+			Name = "Sheen",
+			Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(205, 205, 215)),
+			Rotation = 90,
+		}),
 		Util.new("UIPadding", {
 			PaddingLeft = UDim.new(0, 6),
 			PaddingRight = UDim.new(0, 6),
@@ -157,6 +186,15 @@ function Util.button(props: { [string]: any }, onClick: (() -> ())?): TextButton
 	end
 	button.Parent = props.Parent
 	return button
+end
+
+-- Recolours a button's sheen (e.g. a gold-to-orange TAP button). A GuiObject shows only one
+-- UIGradient, so this replaces the default sheen rather than adding a second gradient.
+function Util.sheen(button: GuiObject, top: Color3, bottom: Color3)
+	local sheen = button:FindFirstChild("Sheen") :: UIGradient?
+	if sheen then
+		sheen.Color = ColorSequence.new(top, bottom)
+	end
 end
 
 -- Progress bar; returns the bar and a setter taking (fraction, text).

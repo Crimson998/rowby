@@ -1,5 +1,6 @@
 --[[
-	Pop-up windows. One is open at a time; opening another closes the current one.
+	Pop-up windows. One is open at a time; opening another closes the current one. The rest of
+	the screen dims behind an open window, and tapping the dimmed area closes it.
 ]]
 
 local Sound = require(script.Parent.Parent.Sound)
@@ -13,9 +14,41 @@ local Windows = {}
 local registry: { [string]: Entry } = {}
 local openName: string? = nil
 local screen: ScreenGui
+local backdrop: TextButton
+
+local BACKDROP_TRANSPARENCY = 0.45
+
+local function showBackdrop(shown: boolean)
+	if shown then
+		backdrop.Visible = true
+		Util.tween(backdrop, 0.15, { BackgroundTransparency = BACKDROP_TRANSPARENCY })
+	else
+		Util.tween(backdrop, 0.15, { BackgroundTransparency = 1 })
+		task.delay(0.15, function()
+			if not openName then
+				backdrop.Visible = false
+			end
+		end)
+	end
+end
 
 function Windows.init(gui: ScreenGui)
 	screen = gui
+	-- Sits above the HUD and below windows (ZIndex 5); notifications (10+) stay on top.
+	backdrop = Util.new("TextButton", {
+		Name = "Backdrop",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Text = "",
+		Visible = false,
+		ZIndex = 4,
+		Parent = screen,
+	})
+	backdrop.Activated:Connect(function()
+		Windows.closeAll()
+	end)
 end
 
 -- Creates a window and returns its body frame (where content goes).
@@ -29,7 +62,7 @@ function Windows.create(name: string, title: string, color: Color3, size: Vector
 		Visible = false,
 		ZIndex = 5,
 		Parent = screen,
-	}, { Util.corner(20), Util.stroke(Theme.Colors.Stroke, 4) })
+	}, { Util.corner(20), Util.stroke() })
 	local scale = Util.autoScale(frame)
 
 	local header = Util.new("Frame", {
@@ -55,11 +88,12 @@ function Windows.create(name: string, title: string, color: Color3, size: Vector
 		Parent = header,
 	})
 	Util.button({
-		Text = "X",
+		Text = "✕",
 		Color = Theme.Colors.Red,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0, 8),
-		Size = UDim2.fromOffset(44, 42),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -12, 0.5, 0),
+		Size = UDim2.fromOffset(40, 40),
+		CornerRadius = 20,
 		ZIndex = 3,
 		Parent = header,
 	}, function()
@@ -94,6 +128,7 @@ function Windows.close(name: string)
 	entry.Frame.Visible = false
 	if openName == name then
 		openName = nil
+		showBackdrop(false)
 	end
 end
 
@@ -110,6 +145,7 @@ function Windows.open(name: string)
 	end
 	Windows.closeAll()
 	openName = name
+	showBackdrop(true)
 	entry.Frame.Visible = true
 	local target = Util.getScale()
 	entry.Scale.Scale = target * 0.85

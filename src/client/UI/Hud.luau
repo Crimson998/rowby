@@ -1,6 +1,12 @@
 --[[
-	Always-on screen elements: currencies, menu buttons with alert badges, the next-goal tracker,
-	active boosts, the big TAP button, auto-tap toggle, free-gift timer and starter pack.
+	Always-on screen elements, grouped so each side of the screen has one job:
+
+	- Top left: your currencies and luck, then the four core actions (Pets, Upgrades, Rebirth,
+	  Shop). Kept high so it stays clear of the phone thumbstick.
+	- Right: rewards to collect (Quests, Daily, Gifts, Offline) with alert badges, the starter
+	  pack offer, and small utility buttons (Stats, Codes, Settings, Admin).
+	- Top centre: the next goal and any active boosts.
+	- Bottom centre: the TAP button, with Auto Tap and Auto Hatch beside it.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,168 +31,299 @@ local Hud = {}
 -- The frame around the TAP button, so other controllers can place buttons beside it.
 Hud.TapArea = nil :: Frame?
 
-local tapButton: TextButton
-local tapValueLabel: TextLabel
-local badges: { [string]: Frame } = {}
-local onTap: (() -> ())? = nil
+type Item = { Window: string, Icon: string, Label: string?, Color: Color3 }
 
-local MENU = {
+-- Width of the left and right rails; each holds a 2×2 grid of tiles.
+local RAIL_WIDTH = 180
+local TILE = (RAIL_WIDTH - Theme.Gap) / 2
+local UTILITY = 36
+
+local CORE: { Item } = {
 	{ Window = "Pets", Icon = "🐾", Color = Theme.Colors.Orange },
 	{ Window = "Upgrades", Icon = "⬆️", Color = Theme.Colors.Blue },
 	{ Window = "Rebirth", Icon = "🔁", Color = Theme.Colors.Rebirth },
 	{ Window = "Shop", Icon = "🛒", Color = Theme.Colors.Green },
+}
+
+local REWARDS: { Item } = {
 	{ Window = "Quests", Icon = "📜", Color = Theme.Colors.Purple },
 	{ Window = "Daily", Icon = "📅", Color = Theme.Colors.Red },
 	{ Window = "Gifts", Icon = "🎁", Color = Theme.Colors.Gold },
-	{ Window = "Offline", Icon = "💤", Color = Theme.Colors.Purple },
-	{ Window = "Stats", Icon = "📊", Color = Theme.Colors.Luck },
-	{ Window = "Codes", Icon = "🎫", Color = Theme.Colors.Gray },
-	{ Window = "Settings", Icon = "⚙️", Color = Theme.Colors.Gray },
+	{ Window = "Offline", Icon = "💤", Label = "Away", Color = Theme.Colors.Blue },
 }
 
-local function buildCurrencies(screen: ScreenGui, openShop: (string) -> ())
-	local panel = Util.new("Frame", {
-		Name = "Currencies",
-		Position = UDim2.fromOffset(12, 12),
-		Size = UDim2.fromOffset(240, 210),
-		BackgroundTransparency = 1,
-		Parent = screen,
-	}, { Util.list(Enum.FillDirection.Vertical, 8) })
-	Util.autoScale(panel)
+local TOOLS: { Item } = {
+	{ Window = "Stats", Icon = "📊", Color = Theme.Colors.PanelLight },
+	{ Window = "Codes", Icon = "🎫", Color = Theme.Colors.PanelLight },
+	{ Window = "Settings", Icon = "⚙️", Color = Theme.Colors.PanelLight },
+}
 
-	local function pill(order: number, icon: string, color: Color3, shopTab: string?): TextLabel
+local tapButton: TextButton
+local badges: { [string]: Frame } = {}
+local captions: { [string]: TextLabel } = {}
+local tiles: { [string]: TextButton } = {}
+local onTap: (() -> ())? = nil
+
+-- A square menu button: big icon, caption underneath and an alert badge in the corner.
+local function tile(parent: Instance, order: number, item: Item): TextButton
+	local button = Util.button({
+		Name = item.Window,
+		LayoutOrder = order,
+		Color = item.Color,
+		Parent = parent,
+	}, function()
+		Windows.toggle(item.Window)
+	end)
+	Util.label({
+		Size = UDim2.fromScale(1, 0.56),
+		Position = UDim2.fromScale(0, 0.04),
+		Text = item.Icon,
+		Parent = button,
+	})
+	captions[item.Window] = Util.label({
+		Size = UDim2.fromScale(1, 0.28),
+		Position = UDim2.fromScale(0, 0.64),
+		Text = item.Label or item.Window,
+		Parent = button,
+	})
+	local badge = Util.new("Frame", {
+		Name = "Badge",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -6, 0, 6),
+		Size = UDim2.fromOffset(24, 24),
+		BackgroundColor3 = Theme.Colors.Red,
+		Visible = false,
+		ZIndex = 3,
+		Parent = button,
+	}, { Util.corner(12), Util.stroke(Theme.Colors.Text, 2) })
+	Util.label({ Size = UDim2.fromScale(1, 1), Text = "!", ZIndex = 4, Parent = badge })
+	badges[item.Window] = badge
+	tiles[item.Window] = button
+	return button
+end
+
+local function grid(parent: Instance, order: number, items: { Item })
+	local frame = Util.new("Frame", {
+		LayoutOrder = order,
+		Size = UDim2.fromOffset(RAIL_WIDTH, TILE * 2 + Theme.Gap),
+		BackgroundTransparency = 1,
+		Parent = parent,
+	}, {
+		Util.new("UIGridLayout", {
+			CellSize = UDim2.fromOffset(TILE, TILE),
+			CellPadding = UDim2.fromOffset(Theme.Gap, Theme.Gap),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	for index, item in items do
+		tile(frame, index, item)
+	end
+end
+
+-- Left rail -----------------------------------------------------------------------------------
+
+local function buildCurrencies(parent: Instance, openShop: (string) -> ())
+	local card = Util.panel({
+		LayoutOrder = 1,
+		Size = UDim2.fromOffset(RAIL_WIDTH, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Parent = parent,
+	}, { Util.padding(Theme.Gap), Util.list(Enum.FillDirection.Vertical, 6) })
+
+	local function row(order: number, icon: string, color: Color3, shopTab: string): TextLabel
 		local frame = Util.new("Frame", {
 			LayoutOrder = order,
-			Size = UDim2.fromOffset(240, 44),
-			BackgroundColor3 = Theme.Colors.Panel,
-			Parent = panel,
-		}, { Util.corner(22), Util.stroke(nil, 3) })
-		Util.label({ Size = UDim2.fromOffset(38, 34), Position = UDim2.fromOffset(6, 5), Text = icon, Parent = frame })
+			Size = UDim2.new(1, 0, 0, 32),
+			BackgroundTransparency = 1,
+			Parent = card,
+		})
+		Util.label({ Size = UDim2.fromOffset(28, 28), Position = UDim2.fromOffset(0, 2), Text = icon, Parent = frame })
 		local amount = Util.label({
-			Size = UDim2.new(1, if shopTab then -96 else -56, 0, 30),
-			Position = UDim2.fromOffset(48, 7),
+			Size = UDim2.new(1, -72, 0, 26),
+			Position = UDim2.fromOffset(34, 3),
 			Text = "0",
 			TextColor3 = color,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = frame,
 		})
-		if shopTab then
-			Util.button({
-				Text = "+",
-				Color = Theme.Colors.Green,
-				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.new(1, -5, 0.5, 0),
-				Size = UDim2.fromOffset(36, 34),
-				CornerRadius = 17,
-				Parent = frame,
-			}, function()
-				openShop(shopTab)
-			end)
-		end
+		Util.button({
+			Text = "+",
+			Color = Theme.Colors.Green,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.fromScale(1, 0.5),
+			Size = UDim2.fromOffset(30, 28),
+			CornerRadius = 10,
+			Parent = frame,
+		}, function()
+			openShop(shopTab)
+		end)
 		return amount
 	end
 
-	local coins = pill(1, "🪙", Theme.Colors.Coins, "Coins")
-	local gems = pill(2, "💎", Theme.Colors.Gems, "Gems")
-	local rebirths = pill(3, "🔁", Theme.Colors.Rebirth, nil)
+	local coins = row(1, "🪙", Theme.Colors.Coins, "Coins")
+	local gems = row(2, "💎", Theme.Colors.Gems, "Gems")
 
 	-- Luck: level from clovers, total luck multiplier and progress to the next level.
-	local luckButton = Util.button({
-		LayoutOrder = 4,
-		Color = Theme.Colors.Panel,
-		CornerRadius = 22,
-		Size = UDim2.fromOffset(240, 50),
-		Parent = panel,
-	}, function()
+	local luck = Util.new("TextButton", {
+		LayoutOrder = 3,
+		Size = UDim2.new(1, 0, 0, 42),
+		BackgroundTransparency = 1,
+		Text = "",
+		Parent = card,
+	})
+	luck.Activated:Connect(function()
 		Windows.open("Stats")
 	end)
-	Util.label({
-		Size = UDim2.fromOffset(34, 30),
-		Position = UDim2.fromOffset(2, 2),
-		Text = "🍀",
-		Parent = luckButton,
-	})
+	Util.label({ Size = UDim2.fromOffset(28, 26), Position = UDim2.fromOffset(0, 0), Text = "🍀", Parent = luck })
 	local luckText = Util.label({
-		Size = UDim2.new(1, -44, 0, 26),
-		Position = UDim2.fromOffset(40, 2),
+		Size = UDim2.new(1, -34, 0, 24),
+		Position = UDim2.fromOffset(34, 1),
 		Text = "",
 		TextColor3 = Theme.Colors.Luck,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Parent = luckButton,
+		Parent = luck,
 	})
 	local _, setLuckBar = Util.bar({
-		Size = UDim2.new(1, -12, 0, 10),
-		Position = UDim2.fromOffset(6, 32),
+		Size = UDim2.new(1, 0, 0, 10),
+		Position = UDim2.fromOffset(0, 30),
 		Color = Theme.Colors.Luck,
 		CornerRadius = 5,
-		Parent = luckButton,
+		Parent = luck,
 	})
+
 	State.watch({ "LuckXP", "Upgrades", "Boosts", "Session.Passes" }, function()
 		local xp = State.Data.LuckXP or 0
 		local level = Formula.luckLevel(xp)
 		local current = Formula.luckXPForLevel(level)
 		local nextXP = Formula.luckXPForLevel(level + 1)
-		luckText.Text = "Luck Lv " .. level .. "  ·  " .. Format.multiplier(Formula.luck(State.Data, State.Session))
+		luckText.Text = "Lv " .. level .. "  ·  " .. Format.multiplier(Formula.luck(State.Data, State.Session))
 		setLuckBar((xp - current) / math.max(nextXP - current, 1))
 	end)
-
-	State.watch({ "Coins", "Gems", "Rebirths" }, function()
-		local data = State.Data
-		coins.Text = Format.number(data.Coins)
-		gems.Text = Format.number(data.Gems)
-		rebirths.Text =
-			string.format("%d  (%s)", data.Rebirths, Format.multiplier(Formula.rebirthMultiplier(data.Rebirths)))
+	State.watch({ "Coins", "Gems" }, function()
+		coins.Text = Format.number(State.Data.Coins)
+		gems.Text = Format.number(State.Data.Gems)
 	end)
 end
 
-local function buildMenu(screen: ScreenGui)
-	local menu = Util.new("Frame", {
-		Name = "Menu",
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, 80),
-		Size = UDim2.fromOffset(230, 310),
+local function buildLeftRail(screen: ScreenGui, openShop: (string) -> ())
+	local rail = Util.new("Frame", {
+		Name = "LeftRail",
+		Position = UDim2.fromOffset(Theme.Margin, Theme.Margin),
+		Size = UDim2.fromOffset(RAIL_WIDTH, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		Parent = screen,
-	}, {
-		Util.new("UIGridLayout", {
-			CellSize = UDim2.fromOffset(70, 70),
-			CellPadding = UDim2.fromOffset(10, 10),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
-	})
-	Util.autoScale(menu)
+	}, { Util.list(Enum.FillDirection.Vertical, 10) })
+	Util.autoScale(rail)
+	buildCurrencies(rail, openShop)
+	grid(rail, 2, CORE)
+end
 
-	for order, item in MENU do
+-- Right rail ----------------------------------------------------------------------------------
+
+local function giftStatus(): (boolean, number)
+	local session = State.Session
+	local elapsed = workspace:GetServerTimeNow() - session.JoinedAt
+	local nextIn = math.huge
+	for index, gift in Config.Gifts do
+		if not session.GiftsClaimed[index] then
+			local remaining = gift.Minutes * 60 - elapsed
+			if remaining <= 0 then
+				return true, 0
+			end
+			nextIn = math.min(nextIn, remaining)
+		end
+	end
+	return false, nextIn
+end
+
+local function buildRightRail(screen: ScreenGui, openShop: (string) -> ())
+	local rail = Util.new("Frame", {
+		Name = "RightRail",
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -Theme.Margin, 0.42, 0),
+		Size = UDim2.fromOffset(RAIL_WIDTH, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		Parent = screen,
+	}, { Util.list(Enum.FillDirection.Vertical, 10, Enum.HorizontalAlignment.Right) })
+	Util.autoScale(rail)
+
+	grid(rail, 1, REWARDS)
+
+	local pack = Products.ProductByKey.StarterPack
+	local starter = Util.button({
+		LayoutOrder = 2,
+		Text = "🎁 Starter Pack  ·  R$ " .. pack.Price,
+		Color = Theme.Colors.Rebirth,
+		Size = UDim2.fromOffset(RAIL_WIDTH, 44),
+		Parent = rail,
+	}, function()
+		openShop("Featured")
+	end)
+	Util.sheen(starter, Color3.fromRGB(255, 190, 110), Color3.fromRGB(255, 90, 175))
+	State.watch({ "OneTime" }, function()
+		starter.Visible = not State.Data.OneTime.StarterPack
+	end)
+
+	local tools = Util.new("Frame", {
+		LayoutOrder = 3,
+		Size = UDim2.fromOffset(RAIL_WIDTH, UTILITY),
+		BackgroundTransparency = 1,
+		Parent = rail,
+	}, { Util.list(Enum.FillDirection.Horizontal, Theme.Gap, Enum.HorizontalAlignment.Right) })
+	for order, item in TOOLS do
 		local button = Util.button({
 			Name = item.Window,
 			LayoutOrder = order,
+			Text = item.Icon,
 			Color = item.Color,
-			CornerRadius = 16,
-			Parent = menu,
+			Size = UDim2.fromOffset(UTILITY, UTILITY),
+			CornerRadius = 10,
+			Parent = tools,
 		}, function()
 			Windows.toggle(item.Window)
 		end)
-		Util.label({ Size = UDim2.fromScale(1, 0.62), Text = item.Icon, Parent = button })
-		Util.label({
-			Size = UDim2.fromScale(1, 0.3),
-			Position = UDim2.fromScale(0, 0.66),
-			Text = item.Window,
-			Parent = button,
-		})
-		local badge = Util.new("Frame", {
-			Name = "Badge",
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(1, -4, 0, 4),
-			Size = UDim2.fromOffset(24, 24),
-			BackgroundColor3 = Theme.Colors.Red,
-			Visible = false,
-			ZIndex = 3,
-			Parent = button,
-		}, { Util.corner(12), Util.stroke(nil, 2) })
-		Util.label({ Size = UDim2.fromScale(1, 1), Text = "!", ZIndex = 4, Parent = badge })
-		badges[item.Window] = badge
+		tiles[item.Window] = button
 	end
+	-- Only admins (Studio, the place owner, Config.Admins) see this; the server checks too.
+	local admin = Util.button({
+		Name = "Admin",
+		LayoutOrder = 0,
+		Text = "🛠",
+		Color = Theme.Colors.Red,
+		Size = UDim2.fromOffset(UTILITY, UTILITY),
+		CornerRadius = 10,
+		Visible = false,
+		Parent = tools,
+	}, function()
+		Windows.toggle("Admin")
+	end)
+	State.watch({ "Session.IsAdmin" }, function()
+		admin.Visible = State.Session.IsAdmin == true
+	end)
+
+	-- The Gifts tile shows the countdown to the next gift and bounces when one is ready.
+	local gifts = tiles.Gifts
+	local giftCaption = captions.Gifts
+	task.spawn(function()
+		while gifts.Parent do
+			local ready, nextIn = giftStatus()
+			giftCaption.Text = if ready then "Ready!" elseif nextIn == math.huge then "Gifts" else Format.time(nextIn)
+			local press = gifts:FindFirstChild("Press") :: UIScale
+			if ready then
+				Util.tween(press, 0.5, { Scale = 1.08 }, Enum.EasingStyle.Sine)
+				task.wait(0.5)
+				Util.tween(press, 0.5, { Scale = 1 }, Enum.EasingStyle.Sine)
+				task.wait(0.5)
+			else
+				task.wait(1)
+			end
+		end
+	end)
 end
+
+-- Top centre: goal and boosts -----------------------------------------------------------------
 
 local function currentGoal(): (string, number, number)
 	local data = State.Data
@@ -202,47 +339,48 @@ local function currentGoal(): (string, number, number)
 end
 
 local function buildGoal(screen: ScreenGui)
-	local frame = Util.new("Frame", {
+	local top = Util.new("Frame", {
 		Name = "Goal",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 8),
-		Size = UDim2.fromOffset(400, 66),
-		BackgroundColor3 = Theme.Colors.Panel,
-		BackgroundTransparency = 0.1,
-		Parent = screen,
-	}, { Util.corner(16), Util.stroke(nil, 3) })
-	Util.autoScale(frame)
-	local title =
-		Util.label({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 5), Text = "", Parent = frame })
-	local _, setBar = Util.bar({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 35), Parent = frame })
-
-	local chips = Util.new("Frame", {
-		Name = "Boosts",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 82),
-		Size = UDim2.fromOffset(600, 34),
+		Position = UDim2.new(0.5, 0, 0, Theme.Margin),
+		Size = UDim2.fromOffset(360, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		Parent = screen,
-	}, { Util.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Center) })
-	Util.autoScale(chips)
+	}, { Util.list(Enum.FillDirection.Vertical, Theme.Gap, Enum.HorizontalAlignment.Center) })
+	Util.autoScale(top)
+
+	local card = Util.panel({
+		LayoutOrder = 1,
+		Size = UDim2.fromOffset(360, 58),
+		Parent = top,
+	})
+	local title = Util.label({
+		Size = UDim2.new(1, -20, 0, 22),
+		Position = UDim2.fromOffset(10, 6),
+		Text = "",
+		Parent = card,
+	})
+	local _, setBar = Util.bar({ Size = UDim2.new(1, -20, 0, 18), Position = UDim2.fromOffset(10, 33), Parent = card })
+
+	local chips = Util.new("Frame", {
+		LayoutOrder = 2,
+		Size = UDim2.fromOffset(480, 30),
+		BackgroundTransparency = 1,
+		Parent = top,
+	}, { Util.list(Enum.FillDirection.Horizontal, Theme.Gap, Enum.HorizontalAlignment.Center) })
 	local function chip(order: number, color: Color3): TextLabel
 		local label = Util.label({
 			LayoutOrder = order,
-			Size = UDim2.fromOffset(150, 32),
+			Size = UDim2.fromOffset(150, 28),
 			BackgroundTransparency = 0,
 			BackgroundColor3 = color,
 			Text = "",
 			Visible = false,
 			Parent = chips,
 		})
-		Util.corner(16).Parent = label
-		Util.new("UIPadding", {
-			PaddingLeft = UDim.new(0, 8),
-			PaddingRight = UDim.new(0, 8),
-			PaddingTop = UDim.new(0, 4),
-			PaddingBottom = UDim.new(0, 4),
-			Parent = label,
-		})
+		Util.corner(14).Parent = label
+		Util.padding(5).Parent = label
 		return label
 	end
 	local coinBoost = chip(1, Theme.Colors.Orange)
@@ -268,23 +406,24 @@ local function buildGoal(screen: ScreenGui)
 	end)
 end
 
+-- Bottom centre: TAP ------------------------------------------------------------------------------
+
 local function buildTap(screen: ScreenGui)
 	local holder = Util.new("Frame", {
 		Name = "TapArea",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -16),
-		Size = UDim2.fromOffset(160, 190),
+		Position = UDim2.new(0.5, 0, 1, -Theme.Margin),
+		Size = UDim2.fromOffset(150, 176),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	})
 	Util.autoScale(holder)
-
 	Hud.TapArea = holder
 
-	tapValueLabel = Util.label({
-		Size = UDim2.fromOffset(240, 30),
+	local tapValue = Util.label({
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.fromOffset(240, 26),
 		Text = "",
 		TextColor3 = Theme.Colors.Coins,
 		Parent = holder,
@@ -293,26 +432,26 @@ local function buildTap(screen: ScreenGui)
 	tapButton = Util.button({
 		Name = "Tap",
 		Color = Theme.Colors.Coins,
-		CornerRadius = 80,
+		CornerRadius = 70,
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.fromScale(0.5, 1),
-		Size = UDim2.fromOffset(150, 150),
+		Size = UDim2.fromOffset(140, 140),
 		Parent = holder,
 	}, function()
 		if onTap then
 			onTap()
 		end
 	end)
-	Util.gradient(Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 150, 30)).Parent = tapButton
+	Util.sheen(tapButton, Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 150, 30))
 	Util.label({
-		Size = UDim2.fromScale(0.8, 0.4),
-		Position = UDim2.fromScale(0.1, 0.2),
+		Size = UDim2.fromScale(0.76, 0.36),
+		Position = UDim2.fromScale(0.12, 0.2),
 		Text = "TAP!",
 		Parent = tapButton,
 	})
 	Util.label({
-		Size = UDim2.fromScale(0.6, 0.2),
-		Position = UDim2.fromScale(0.2, 0.62),
+		Size = UDim2.fromScale(0.5, 0.2),
+		Position = UDim2.fromScale(0.25, 0.6),
 		Text = "🪙",
 		Parent = tapButton,
 	})
@@ -320,6 +459,7 @@ local function buildTap(screen: ScreenGui)
 	State.watch({
 		"Upgrades",
 		"Pets",
+		"Index",
 		"Rebirths",
 		"HighestZone",
 		"Boosts",
@@ -327,7 +467,7 @@ local function buildTap(screen: ScreenGui)
 		"Session.FriendBonus",
 		"Session.Premium",
 	}, function()
-		tapValueLabel.Text = "+" .. Format.number(Formula.tapValue(State.Data, State.Session)) .. " per tap"
+		tapValue.Text = "+" .. Format.number(Formula.tapValue(State.Data, State.Session)) .. " per tap"
 	end)
 
 	local auto = Util.button({
@@ -335,7 +475,7 @@ local function buildTap(screen: ScreenGui)
 		Color = Theme.Colors.Gray,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(1, 12, 1, -20),
-		Size = UDim2.fromOffset(140, 48),
+		Size = UDim2.fromOffset(140, 44),
 		Parent = holder,
 	}, function()
 		if State.Session.Passes.AutoTap then
@@ -354,93 +494,16 @@ local function buildTap(screen: ScreenGui)
 			auto.BackgroundColor3 = Theme.Colors.Green
 		else
 			auto.Text = "🤖 Auto: OFF"
-			auto.BackgroundColor3 = Theme.Colors.Red
+			auto.BackgroundColor3 = Theme.Colors.Gray
 		end
 	end)
 end
 
-local function giftStatus(): (boolean, number)
-	local session = State.Session
-	local elapsed = workspace:GetServerTimeNow() - session.JoinedAt
-	local nextIn = math.huge
-	for index, gift in Config.Gifts do
-		if not session.GiftsClaimed[index] then
-			local remaining = gift.Minutes * 60 - elapsed
-			if remaining <= 0 then
-				return true, 0
-			end
-			nextIn = math.min(nextIn, remaining)
-		end
-	end
-	return false, nextIn
-end
-
-local function buildRightColumn(screen: ScreenGui, openShop: (string) -> ())
-	local column = Util.new("Frame", {
-		Name = "Right",
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -12, 0.5, 0),
-		Size = UDim2.fromOffset(180, 210),
-		BackgroundTransparency = 1,
-		Parent = screen,
-	}, { Util.list(Enum.FillDirection.Vertical, 10, Enum.HorizontalAlignment.Right) })
-	Util.autoScale(column)
-
-	local gifts = Util.button(
-		{ LayoutOrder = 1, Color = Theme.Colors.Gold, Size = UDim2.fromOffset(180, 64), Parent = column },
-		function()
-			Windows.open("Gifts")
-		end
-	)
-	local starter = Util.button(
-		{ LayoutOrder = 2, Color = Theme.Colors.Rebirth, Size = UDim2.fromOffset(180, 64), Parent = column },
-		function()
-			openShop("Featured")
-		end
-	)
-	Util.gradient(Color3.fromRGB(255, 180, 90), Color3.fromRGB(255, 80, 170)).Parent = starter
-	-- Only admins (Studio, the place owner, Config.Admins) see this; the server checks too.
-	local admin = Util.button({
-		LayoutOrder = 3,
-		Text = "🛠 Admin (F2)",
-		Color = Theme.Colors.Red,
-		Size = UDim2.fromOffset(180, 44),
-		Visible = false,
-		Parent = column,
-	}, function()
-		Windows.toggle("Admin")
-	end)
-	State.watch({ "Session.IsAdmin" }, function()
-		admin.Visible = State.Session.IsAdmin == true
-	end)
-
-	local pack = Products.ProductByKey.StarterPack
-	starter.Text = "🎁 Starter Pack\nR$ " .. pack.Price
-	State.watch({ "OneTime" }, function()
-		starter.Visible = not State.Data.OneTime.StarterPack
-	end)
-
-	task.spawn(function()
-		while gifts.Parent do
-			local ready, nextIn = giftStatus()
-			gifts.Text = if ready then "🎁 Free Gift!\nREADY!" else "🎁 Free Gift\nin " .. Format.time(nextIn)
-			local press = gifts:FindFirstChild("Press") :: UIScale
-			if ready then
-				Util.tween(press, 0.5, { Scale = 1.08 }, Enum.EasingStyle.Sine)
-				task.wait(0.5)
-				Util.tween(press, 0.5, { Scale = 1 }, Enum.EasingStyle.Sine)
-				task.wait(0.5)
-			else
-				task.wait(1)
-			end
-		end
-	end)
-end
+-- Badges ---------------------------------------------------------------------------------------
 
 local function refreshBadges()
 	local data, session = State.Data, State.Session
-	local dailyReady = Formula.dailyStatus(data.Daily, workspace:GetServerTimeNow())
-	badges.Daily.Visible = dailyReady
+	badges.Daily.Visible = (Formula.dailyStatus(data.Daily, workspace:GetServerTimeNow()))
 	badges.Gifts.Visible = (giftStatus())
 	local questReady = false
 	for _, quest in data.Quests do
@@ -448,10 +511,14 @@ local function refreshBadges()
 			questReady = true
 		end
 	end
+	for _, quest in (data.Weekly and data.Weekly.Quests or {}) do
+		if not quest.Claimed and Quests.progress(data, quest) >= quest.Goal then
+			questReady = true
+		end
+	end
 	badges.Quests.Visible = questReady
 	badges.Rebirth.Visible = data.Coins >= Formula.rebirthCost(data.Rebirths)
 	badges.Offline.Visible = data.Offline ~= nil and data.Offline.Coins > 0
-	local hasFreeSlot = false
 	local equipped = 0
 	for _, pet in data.Pets do
 		if pet.Equipped then
@@ -459,7 +526,7 @@ local function refreshBadges()
 		end
 	end
 	local count = Formula.petCount(data)
-	hasFreeSlot = equipped < Formula.equipSlots(data, session) and equipped < count
+	local hasFreeSlot = equipped < Formula.equipSlots(data, session) and equipped < count
 	badges.Pets.Visible = hasFreeSlot or count >= Config.Pets.Storage * 0.9
 end
 
@@ -488,16 +555,16 @@ end
 
 function Hud.build(screen: ScreenGui, tapHandler: () -> (), openShop: (string) -> ())
 	onTap = tapHandler
-	buildCurrencies(screen, openShop)
-	buildMenu(screen)
+	buildLeftRail(screen, openShop)
+	buildRightRail(screen, openShop)
 	buildGoal(screen)
 	buildTap(screen)
-	buildRightColumn(screen, openShop)
 
 	State.watch({
 		"Coins",
 		"Stats",
 		"Quests",
+		"Weekly",
 		"Daily",
 		"Pets",
 		"Rebirths",
