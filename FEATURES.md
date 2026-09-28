@@ -20,7 +20,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **Badges** (S): Roblox badges for first hatch, each area, first rebirth, a Secret pet and a full index. Why: cheap goals that show on player profiles.
 - **Analytics** (S): AnalyticsService funnel (join, first hatch, area 2, first rebirth) and economy events. Why: prices and pacing can be tuned from real data.
 - **First-session tutorial** (M): short prompts to tap, hatch, equip, grab a clover and open Upgrades. Why: players decide whether to stay in the first few minutes.
-- **Index rewards** (S): a permanent bonus for discovering every pet in an area. Why: gives rare hunting a clear finish line.
 - **Music and ambience** (S, partly done): area music with crossfades and a Music on/off setting are shipped; still to add are ambient sounds per area and a volume slider. Why: the game has effects but little atmosphere.
 
 ### Next
@@ -57,3 +56,4 @@ Noted to fix later; not features.
 ## Shipped
 
 - **Tiered hatches**: each hatch rolls the pet, its tier and its level (1 to 10) separately, luck improves all three, and pets have levels that multiply their power.
+- **Index rewards**: discovering every pet in an area's egg completes that area's Pet Index for a permanent +15% coin bonus, stacking per area; shown in 🐾 Pets and 📊 Stats, with a toast when an area completes.

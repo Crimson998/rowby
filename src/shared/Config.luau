@@ -158,6 +158,8 @@ Config.Bonuses = {
 	LuckBoostMultiplier = 2,
 	VIPExtraSlots = 1,
 	ExtraPetsPassSlots = 3,
+	-- Permanent coin bonus per area whose Pet Index (every pet in that area's egg) is fully discovered.
+	AreaIndexCoinBonus = 0.15,
 }
 
 --[[

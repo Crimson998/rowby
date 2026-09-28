@@ -357,6 +357,31 @@ test("upgrade costs grow and stop at max level", function()
 	end
 end)
 
+test("area Pet Index bonus applies once every pet in an area is discovered", function()
+	local data = freshData()
+	local session = freshSession()
+	eq(Formula.areaIndexBonus(data), 0, "nothing discovered yet")
+	eq(Formula.eggIndexComplete(data, "Meadow"), false, "Meadow incomplete")
+
+	for _, entry in Eggs.ById.Meadow.Pets do
+		data.Index[entry.Id] = true
+	end
+	eq(Formula.eggIndexComplete(data, "Meadow"), true, "Meadow complete")
+	eq(Formula.eggIndexComplete(data, "Candy"), false, "Candy still incomplete")
+	near(Formula.areaIndexBonus(data), Config.Bonuses.AreaIndexCoinBonus, 1e-9, "one area complete")
+
+	for _, entry in Eggs.ById.Candy.Pets do
+		data.Index[entry.Id] = true
+	end
+	near(Formula.areaIndexBonus(data), Config.Bonuses.AreaIndexCoinBonus * 2, 1e-9, "two areas complete")
+	near(
+		Formula.coinMultiplier(data, session, false),
+		1 + Config.Bonuses.AreaIndexCoinBonus * 2,
+		1e-9,
+		"bonus feeds the coin multiplier"
+	)
+end)
+
 test("rebirth cost and gems grow each rebirth", function()
 	for rebirths = 0, 20 do
 		assert(Formula.rebirthCost(rebirths + 1) > Formula.rebirthCost(rebirths), "cost " .. rebirths)
