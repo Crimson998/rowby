@@ -13,6 +13,7 @@ local ordered = {
 	require(Services.PetService),
 	require(Services.EconomyService),
 	require(Services.RewardService),
+	require(Services.AchievementService),
 	require(Services.LeaderboardService),
 	require(Services.SocialService),
 	require(Services.SettingsService),

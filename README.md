@@ -79,6 +79,7 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 | Daily streak | A 7-day reward cycle that grows each day |
 | Playtime gifts | 8 gifts per session, then the round restarts |
 | Quests | 3 at a time for gems, scaled to your progress |
+| Achievements | 🏆 One-time milestones for taps, coins, eggs, clovers, rebirths, areas and pets discovered — each claimed once for a gem reward |
 | Social | +10% coins per friend in the server (up to +50%), global leaderboards, codes |
 | Premium | Roblox Premium members get +10% coins (their playtime is what earns you Premium Payouts) |
 
