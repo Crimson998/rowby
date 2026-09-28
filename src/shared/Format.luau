@@ -67,6 +67,22 @@ function Format.time(seconds: number): string
 	return string.format("%d:%02d", minutes, secs)
 end
 
+-- A length of time in words: 45 -> "45s", 750 -> "12m", 18720 -> "5h 12m", 190800 -> "2d 5h"
+function Format.duration(seconds: number): string
+	seconds = math.max(0, math.floor(seconds))
+	local days = seconds // 86400
+	local hours = (seconds % 86400) // 3600
+	local minutes = (seconds % 3600) // 60
+	if days > 0 then
+		return if hours > 0 then string.format("%dd %dh", days, hours) else days .. "d"
+	elseif hours > 0 then
+		return if minutes > 0 then string.format("%dh %dm", hours, minutes) else hours .. "h"
+	elseif minutes > 0 then
+		return minutes .. "m"
+	end
+	return seconds .. "s"
+end
+
 -- 0.0001 -> "0.01%", 0.62 -> "62%"
 function Format.chance(fraction: number): string
 	local percent = fraction * 100

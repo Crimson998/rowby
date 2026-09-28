@@ -38,6 +38,7 @@ local MENU = {
 	{ Window = "Quests", Icon = "📜", Color = Theme.Colors.Purple },
 	{ Window = "Daily", Icon = "📅", Color = Theme.Colors.Red },
 	{ Window = "Gifts", Icon = "🎁", Color = Theme.Colors.Gold },
+	{ Window = "Offline", Icon = "💤", Color = Theme.Colors.Purple },
 	{ Window = "Stats", Icon = "📊", Color = Theme.Colors.Luck },
 	{ Window = "Codes", Icon = "🎫", Color = Theme.Colors.Gray },
 	{ Window = "Settings", Icon = "⚙️", Color = Theme.Colors.Gray },
@@ -449,6 +450,7 @@ local function refreshBadges()
 	end
 	badges.Quests.Visible = questReady
 	badges.Rebirth.Visible = data.Coins >= Formula.rebirthCost(data.Rebirths)
+	badges.Offline.Visible = data.Offline ~= nil and data.Offline.Coins > 0
 	local hasFreeSlot = false
 	local equipped = 0
 	for _, pet in data.Pets do
@@ -492,10 +494,17 @@ function Hud.build(screen: ScreenGui, tapHandler: () -> (), openShop: (string) -
 	buildTap(screen)
 	buildRightColumn(screen, openShop)
 
-	State.watch(
-		{ "Coins", "Stats", "Quests", "Daily", "Pets", "Rebirths", "Session.GiftsClaimed", "Session.JoinedAt" },
-		refreshBadges
-	)
+	State.watch({
+		"Coins",
+		"Stats",
+		"Quests",
+		"Daily",
+		"Pets",
+		"Rebirths",
+		"Offline",
+		"Session.GiftsClaimed",
+		"Session.JoinedAt",
+	}, refreshBadges)
 	task.spawn(function()
 		while true do
 			task.wait(1)

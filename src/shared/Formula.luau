@@ -159,6 +159,16 @@ function Formula.cloverStreakMultiplier(streak: number): number
 	return math.min(1 + math.max(streak, 0) * Config.Orbs.StreakStep, Config.Orbs.StreakMaxMultiplier)
 end
 
+-- Coins for time away (Config.Offline): Rate of your normal earning rate for up to MaxHours
+-- away. Absences shorter than MinSeconds (a reconnect, a server hop) earn nothing.
+function Formula.offlineCoins(data, session, awaySeconds: number): number
+	if awaySeconds < Config.Offline.MinSeconds then
+		return 0
+	end
+	local counted = math.min(awaySeconds, Config.Offline.MaxHours * 3600)
+	return Formula.rewardCoins(data, session, counted * Config.Offline.Rate)
+end
+
 -- Total Luck XP needed to reach a Luck level.
 function Formula.luckXPForLevel(level: number): number
 	return math.ceil(Config.Luck.BaseXP * level ^ Config.Luck.Exponent)

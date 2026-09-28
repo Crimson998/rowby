@@ -64,8 +64,11 @@ local TEMPLATE = {
 	QuestsCompleted = 0,
 	-- Bigger goals that refresh every Config.Weekly.PeriodDays; Start is os.time() when rolled.
 	Weekly = { Quests = {}, Start = 0 },
-	-- os.time() when the player last left; used to grant offline earnings on their next join.
+	-- os.time() the player was last online (stamped while playing and on leaving); used to
+	-- work out offline earnings on their next join.
 	LastSeen = 0,
+	-- Offline earnings waiting in the 💤 Offline window: coins, and how long they were away.
+	Offline = { Coins = 0, Away = 0 },
 	Stats = {
 		Taps = 0,
 		CoinsEarned = 0,

@@ -190,6 +190,22 @@ test("offline earnings pay less than playing, and are capped", function()
 	)
 end)
 
+test("offline coins need a real absence and stop growing at the cap", function()
+	local data = freshData()
+	local session = freshSession()
+	local offline = Config.Offline
+	eq(Formula.offlineCoins(data, session, offline.MinSeconds - 1), 0, "short disconnects earn nothing")
+	assert(Formula.offlineCoins(data, session, offline.MinSeconds) > 0, "a real absence earns coins")
+	local cap = Formula.offlineCoins(data, session, offline.MaxHours * 3600)
+	eq(Formula.offlineCoins(data, session, offline.MaxHours * 3600 * 10), cap, "longer than the cap earns the cap")
+	eq(Formula.offlineCoins(data, session, math.huge), cap, "the most you can be owed is the cap")
+	eq(
+		cap,
+		Formula.rewardCoins(data, session, offline.MaxHours * 3600 * offline.Rate),
+		"the cap is Rate of that much play"
+	)
+end)
+
 test("auto-delete can never remove Legendary or rarer pets", function()
 	for _, rarity in Config.Pets.AutoDeletable do
 		local info = Config.Rarities[rarity]
@@ -563,6 +579,11 @@ test("chances, times and commas format nicely", function()
 	eq(Format.time(65), "1:05", "minutes")
 	eq(Format.time(3725), "1:02:05", "hours")
 	eq(Format.time(90000), "1d 1h", "days")
+	eq(Format.duration(45), "45s", "duration seconds")
+	eq(Format.duration(750), "12m", "duration minutes")
+	eq(Format.duration(18720), "5h 12m", "duration hours")
+	eq(Format.duration(10800), "3h", "duration whole hours")
+	eq(Format.duration(190800), "2d 5h", "duration days")
 	eq(Format.commas(1234567), "1,234,567", "commas")
 	eq(Format.commas(123), "123", "short commas")
 end)

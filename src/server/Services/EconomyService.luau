@@ -136,22 +136,41 @@ function EconomyService.unlockZone(profile, zoneIndex: number)
 	effectRemote:FireClient(profile.Player, "ZoneUnlocked", zoneIndex)
 end
 
--- Coins for time away since the player's last session, at a reduced rate (Config.Offline).
-local function grantOfflineEarnings(profile)
+-- On join, works out coins for the time away since the player was last seen (Config.Offline)
+-- and leaves them waiting in the 💤 Offline window to collect. Uncollected coins carry over,
+-- but never add up to more than one full offline period's worth.
+local function addOfflineEarnings(profile)
 	local data = profile.Data
-	if data.LastSeen <= 0 then
+	local lastSeen = data.LastSeen
+	data.LastSeen = os.time()
+	if lastSeen <= 0 then
 		return
 	end
-	local away = os.time() - data.LastSeen
-	if away < Config.Offline.MinSeconds then
+	local away = os.time() - lastSeen
+	local coins = Formula.offlineCoins(data, profile.Session, away)
+	if coins <= 0 then
 		return
 	end
-	local seconds = math.min(away, Config.Offline.MaxHours * 3600) * Config.Offline.Rate
-	local coins = Formula.rewardCoins(data, profile.Session, seconds)
+	local offline = data.Offline
+	local most = Formula.offlineCoins(data, profile.Session, math.huge)
+	offline.Coins = math.min(offline.Coins + coins, most)
+	offline.Away = away
+	DataService.change(profile, "Offline")
+end
+
+local function claimOffline(profile)
+	local offline = profile.Data.Offline
+	local coins = offline.Coins
+	if coins <= 0 then
+		return
+	end
+	offline.Coins = 0
+	offline.Away = 0
 	DataService.addCoins(profile, coins, false)
+	DataService.change(profile, "Offline")
 	DataService.notify(
 		profile.Player,
-		"💤 Welcome back! +🪙 " .. Format.number(coins) .. " while you were away.",
+		"💤 Collected 🪙 " .. Format.number(coins) .. " from while you were away!",
 		"Reward"
 	)
 end
@@ -174,7 +193,7 @@ end
 
 function EconomyService.Init()
 	DataService.onLoaded(setupCharacter)
-	DataService.onLoaded(grantOfflineEarnings)
+	DataService.onLoaded(addOfflineEarnings)
 	DataService.onRelease(function(profile)
 		buckets[profile.Player] = nil
 		profile.Data.LastSeen = os.time()
@@ -190,6 +209,7 @@ function EconomyService.Start()
 	end)
 
 	Actions.register("BuyUpgrade", buyUpgrade)
+	Actions.register("ClaimOffline", claimOffline)
 	Actions.register("Rebirth", rebirth)
 	Actions.register("UnlockZone", function(profile, zoneIndex)
 		if type(zoneIndex) == "number" then
@@ -224,6 +244,18 @@ function EconomyService.Start()
 				if profile.Session.AutoTap and profile.Session.Passes.AutoTap then
 					tap(profile)
 				end
+			end
+		end
+	end)
+
+	-- Keep LastSeen fresh while playing, so a server crash (no chance to stamp it on leaving)
+	-- can't count the time spent playing as time away.
+	task.spawn(function()
+		while true do
+			task.wait(30)
+			local now = os.time()
+			for _, profile in DataService.all() do
+				profile.Data.LastSeen = now
 			end
 		end
 	end)
