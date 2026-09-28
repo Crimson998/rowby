@@ -21,7 +21,6 @@ return {
 		Orange = rgb(255, 145, 45),
 		Gray = rgb(115, 120, 150),
 		Gold = rgb(255, 200, 40),
-		Teal = rgb(45, 210, 190),
 		Disabled = rgb(85, 88, 110),
 	},
 }

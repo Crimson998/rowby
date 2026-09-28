@@ -6,7 +6,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Achievements = require(Shared.Achievements)
 local Config = require(Shared.Config)
 local Eggs = require(Shared.Eggs)
 local Format = require(Shared.Format)
@@ -37,7 +36,6 @@ local MENU = {
 	{ Window = "Rebirth", Icon = "🔁", Color = Theme.Colors.Rebirth },
 	{ Window = "Shop", Icon = "🛒", Color = Theme.Colors.Green },
 	{ Window = "Quests", Icon = "📜", Color = Theme.Colors.Purple },
-	{ Window = "Achievements", Icon = "🏆", Color = Theme.Colors.Teal },
 	{ Window = "Daily", Icon = "📅", Color = Theme.Colors.Red },
 	{ Window = "Gifts", Icon = "🎁", Color = Theme.Colors.Gold },
 	{ Window = "Stats", Icon = "📊", Color = Theme.Colors.Luck },
@@ -450,14 +448,6 @@ local function refreshBadges()
 		end
 	end
 	badges.Quests.Visible = questReady
-	local achievementReady = false
-	for _, template in Achievements.Templates do
-		if not Achievements.isClaimed(data, template) and Achievements.progress(data, template) >= template.Goal then
-			achievementReady = true
-			break
-		end
-	end
-	badges.Achievements.Visible = achievementReady
 	badges.Rebirth.Visible = data.Coins >= Formula.rebirthCost(data.Rebirths)
 	local hasFreeSlot = false
 	local equipped = 0
@@ -502,19 +492,10 @@ function Hud.build(screen: ScreenGui, tapHandler: () -> (), openShop: (string) -
 	buildTap(screen)
 	buildRightColumn(screen, openShop)
 
-	State.watch({
-		"Coins",
-		"Stats",
-		"Quests",
-		"Achievements",
-		"Daily",
-		"Pets",
-		"Rebirths",
-		"HighestZone",
-		"Index",
-		"Session.GiftsClaimed",
-		"Session.JoinedAt",
-	}, refreshBadges)
+	State.watch(
+		{ "Coins", "Stats", "Quests", "Daily", "Pets", "Rebirths", "Session.GiftsClaimed", "Session.JoinedAt" },
+		refreshBadges
+	)
 	task.spawn(function()
 		while true do
 			task.wait(1)

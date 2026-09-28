@@ -60,8 +60,6 @@ local TEMPLATE = {
 	Daily = { Last = 0, Streak = 0 },
 	Quests = {},
 	QuestsCompleted = 0,
-	-- [achievementId] = true once claimed
-	Achievements = {},
 	Stats = {
 		Taps = 0,
 		CoinsEarned = 0,
