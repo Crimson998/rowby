@@ -153,6 +153,12 @@ function Formula.cloverValue(zoneIndex: number, lucky: boolean): number
 	return zone.CloverValue * (if lucky then Config.Orbs.LuckyMultiplier else 1)
 end
 
+-- Multiplier from a clover-grabbing streak (see Config.Orbs.StreakWindowSeconds): grows by
+-- StreakStep per clover grabbed in quick succession, capped at StreakMaxMultiplier.
+function Formula.cloverStreakMultiplier(streak: number): number
+	return math.min(1 + math.max(streak, 0) * Config.Orbs.StreakStep, Config.Orbs.StreakMaxMultiplier)
+end
+
 -- Total Luck XP needed to reach a Luck level.
 function Formula.luckXPForLevel(level: number): number
 	return math.ceil(Config.Luck.BaseXP * level ^ Config.Luck.Exponent)
@@ -227,13 +233,16 @@ end
 export type Odds = { { Id: string, Chance: number } }
 
 -- The exact probabilities used by rollEgg, after luck. This is what players see on every egg.
-function Formula.eggOdds(eggId: string, luck: number): Odds
+-- guaranteeLucky zeroes out every non-Rare-or-better pet's weight (see Formula.rollHatch).
+function Formula.eggOdds(eggId: string, luck: number, guaranteeLucky: boolean?): Odds
 	local egg = Eggs.ById[eggId]
 	local weights = {}
 	local total = 0
 	for _, entry in egg.Pets do
 		local rarity = Config.Rarities[Pets[entry.Id].Rarity]
-		local weight = entry.Weight * (if rarity.Lucky then luck else 1)
+		local weight = if guaranteeLucky and not rarity.Lucky
+			then 0
+			else entry.Weight * (if rarity.Lucky then luck else 1)
 		table.insert(weights, weight)
 		total += weight
 	end
@@ -273,8 +282,8 @@ local function luckyChances(weights: { number }, luck: number): { number }
 	return scaled
 end
 
-function Formula.rollEgg(eggId: string, luck: number, rng: Random): string
-	local odds = Formula.eggOdds(eggId, luck)
+function Formula.rollEgg(eggId: string, luck: number, rng: Random, guaranteeLucky: boolean?): string
+	local odds = Formula.eggOdds(eggId, luck, guaranteeLucky)
 	local chances = {}
 	for index, entry in odds do
 		chances[index] = entry.Chance
@@ -298,10 +307,12 @@ end
 
 export type Hatch = { Id: string, Tier: number, Level: number }
 
--- One hatch = three separate rolls: the pet, its tier and its level.
-function Formula.rollHatch(eggId: string, luck: number, rng: Random): Hatch
+-- One hatch = three separate rolls: the pet, its tier and its level. guaranteeLucky (hatch pity,
+-- see Config.Hatch.PityMisses) restricts the pet roll to Rare-or-better pets; tier and level are
+-- unaffected.
+function Formula.rollHatch(eggId: string, luck: number, rng: Random, guaranteeLucky: boolean?): Hatch
 	return {
-		Id = Formula.rollEgg(eggId, luck, rng),
+		Id = Formula.rollEgg(eggId, luck, rng, guaranteeLucky),
 		Tier = pick(Formula.tierOdds(luck), rng),
 		Level = pick(Formula.levelOdds(luck), rng),
 	}

@@ -29,11 +29,9 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **More areas** (M each): areas 6 to 8 with new eggs, pets and themes after Cosmic Void. Why: late-game players run out of goals.
 - **Pet abilities** (M): some pets gain a perk, such as auto-collecting clovers, faster hatching or bonus gems. Why: pets matter beyond one power number.
 - **Pet set bonuses** (M): pets belong to sets (by area, family or element); equipping 2, 4 or a full set unlocks stacking bonuses, like Diablo item sets: more coins, more luck, then a unique perk. Why: rewards building a team instead of just equipping the strongest pets, and gives older pets a use.
-- **Clover streaks** (S): grabbing clovers in quick succession builds a streak that multiplies Luck XP, up to a cap; a few seconds without a clover resets it. Why: makes the luck track active and skill-based instead of just walking around.
 - **Rebirth raises the luck cap** (M): the Luck level cap starts lower and grows with each rebirth; clovers collected at the cap are wasted, so capping out is the signal to rebirth. Why: links the two core tracks (coins and luck) and gives rebirth a clear purpose beyond a coin multiplier.
 - **Weekly quests** (S): three bigger weekly goals alongside the daily quests. Why: a reason to come back across the week.
 - **Offline earnings** (S): coins for time away at a reduced rate, capped at a few hours. Why: rewards returning without punishing breaks.
-- **Hatch pity** (S): a guaranteed Rare-or-better after a set number of misses, shown on the egg. Why: fairer luck and fewer frustrated players.
 - **Rebirth shop** (M): rebirth tokens spent on permanent perks, such as storage or auto-collect. Why: deepens the long-term loop.
 
 ### Later
@@ -57,3 +55,5 @@ Noted to fix later; not features.
 
 - **Tiered hatches**: each hatch rolls the pet, its tier and its level (1 to 10) separately, luck improves all three, and pets have levels that multiply their power.
 - **Index rewards**: discovering every pet in an area's egg completes that area's Pet Index for a permanent +15% coin bonus, stacking per area; shown in 🐾 Pets and 📊 Stats, with a toast when an area completes.
+- **Hatch pity**: an egg guarantees a Rare-or-better pet once 40 hatches pass without one, resetting the counter; progress ("Pity: N to guaranteed Rare+") shows on every egg's odds board, and a toast fires when the guarantee kicks in.
+- **Clover streaks**: grabbing clovers within 2.5 seconds of the last one builds a streak that multiplies Luck XP by up to 2x; a longer gap resets it to normal.

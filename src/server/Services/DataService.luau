@@ -55,6 +55,8 @@ local TEMPLATE = {
 	NextPetUid = 1,
 	-- [petId] = true once discovered
 	Index = {},
+	-- Hatches since the last Rare-or-better pet; see Config.Hatch.PityMisses.
+	HatchPity = 0,
 	-- Seconds remaining; boosts only tick down while you're playing.
 	Boosts = { Coins = 0, Luck = 0 },
 	Daily = { Last = 0, Streak = 0 },
@@ -170,6 +172,9 @@ local function newSession(player: Player)
 		JoinedAt = workspace:GetServerTimeNow(),
 		GiftsClaimed = table.create(#Config.Gifts, false),
 		AutoTap = false,
+		-- Clovers grabbed in quick succession; see Config.Orbs.StreakWindowSeconds.
+		CloverStreak = 0,
+		LastCloverAt = 0,
 	}
 end
 

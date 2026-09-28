@@ -38,6 +38,7 @@ local currentZone = 0
 -- Egg odds boards ---------------------------------------------------------------------------
 
 local refreshEggBoards: () -> ()
+local refreshPity: () -> ()
 
 -- Level ranges shown on egg boards: level 2 up to the highest hatchable level, in three groups
 -- (e.g. Lv 2–4, 5–7, 8–10). Level 1 is whatever is left.
@@ -69,7 +70,7 @@ local function buildEggBoard(stand: Instance)
 	local board = Util.new("BillboardGui", {
 		Name = "Odds",
 		Adornee = eggModel.PrimaryPart,
-		Size = UDim2.fromOffset(250, 84 + #egg.Pets * rowHeight + 22 + extraRows * smallRow),
+		Size = UDim2.fromOffset(250, 84 + #egg.Pets * rowHeight + 42 + extraRows * smallRow),
 		StudsOffset = Vector3.new(0, 9, 0),
 		MaxDistance = 80,
 		LightInfluence = 0,
@@ -158,6 +159,15 @@ local function buildEggBoard(stand: Instance)
 	end
 
 	Util.label({
+		Name = "Pity",
+		AnchorPoint = Vector2.new(0, 1),
+		Size = UDim2.new(1, -12, 0, 18),
+		Position = UDim2.new(0, 6, 1, -25),
+		Text = "",
+		TextColor3 = Theme.Colors.SubText,
+		Parent = frame,
+	})
+	Util.label({
 		Name = "Footer",
 		AnchorPoint = Vector2.new(0, 1),
 		Size = UDim2.new(1, -12, 0, 20),
@@ -169,6 +179,7 @@ local function buildEggBoard(stand: Instance)
 	eggBoards[eggId] = board
 	lastLuck = -1
 	refreshEggBoards()
+	refreshPity()
 end
 
 function refreshEggBoards()
@@ -212,6 +223,21 @@ function refreshEggBoards()
 		else
 			footer.Text = if luck > 1 then "🍀 Your luck: " .. Format.multiplier(luck) else "E to hatch · R for x3"
 			footer.TextColor3 = Theme.Colors.Green
+		end
+	end
+end
+
+-- Hatch pity progress, updated independently of the luck-gated odds refresh above.
+function refreshPity()
+	local remaining = math.max(0, Config.Hatch.PityMisses - (State.Data.HatchPity or 0))
+	local text = if remaining <= 0
+		then "🍀 Next hatch: guaranteed Rare+!"
+		else "🍀 Pity: " .. remaining .. " to guaranteed Rare+"
+	for _, board in eggBoards do
+		local frame = board:FindFirstChildOfClass("Frame") :: Frame
+		local label = frame:FindFirstChild("Pity") :: TextLabel?
+		if label then
+			label.Text = text
 		end
 	end
 end
@@ -492,6 +518,7 @@ function World.start()
 	CollectionService:GetInstanceAddedSignal("EggStand"):Connect(buildEggBoard)
 	CollectionService:GetInstanceAddedSignal("ZoneGate"):Connect(refreshGates)
 	State.watch({ "Upgrades", "Boosts", "HighestZone", "LuckXP", "Session.Passes" }, refreshEggBoards)
+	State.watch({ "HatchPity" }, refreshPity)
 	State.watch({ "HighestZone" }, function()
 		lastLuck = -1
 		refreshEggBoards()

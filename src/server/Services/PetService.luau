@@ -191,14 +191,24 @@ local function hatch(profile, eggId, count)
 	-- the pet, its tier and its level separately.
 	local luck = Formula.luck(data, session)
 	local odds = Formula.eggOdds(eggId, luck)
+	local guaranteedOdds = nil :: Formula.Odds?
 	local tierOdds = Formula.tierOdds(luck)
 	local autoDelete = data.Settings.AutoDelete
 	local results = {}
 	local seen = {}
 	local kept = 0
+	-- Hatch pity: guarantee a Rare-or-better pet once misses reach Config.Hatch.PityMisses.
+	local pity = data.HatchPity or 0
+	local pityUsed = false
 	for _ = 1, count do
-		local rolled = Formula.rollHatch(eggId, luck, rng)
+		local guarantee = pity >= Config.Hatch.PityMisses
+		local rolled = Formula.rollHatch(eggId, luck, rng, guarantee)
 		local petId = rolled.Id
+		if guarantee then
+			pityUsed = true
+			guaranteedOdds = guaranteedOdds or Formula.eggOdds(eggId, luck, true)
+		end
+		pity = if Config.Rarities[Pets[petId].Rarity].Lucky then 0 else pity + 1
 		local isNew = not data.Index[petId] and not seen[petId]
 		seen[petId] = true
 		-- Auto-delete never takes new discoveries or pets that rolled a higher tier.
@@ -206,7 +216,14 @@ local function hatch(profile, eggId, count)
 		if not deleted then
 			kept += 1
 		end
-		table.insert(results, { Id = petId, Tier = rolled.Tier, Level = rolled.Level, New = isNew, Deleted = deleted })
+		table.insert(results, {
+			Id = petId,
+			Tier = rolled.Tier,
+			Level = rolled.Level,
+			New = isNew,
+			Deleted = deleted,
+			Odds = if guarantee then guaranteedOdds else odds,
+		})
 	end
 	if Formula.petCount(data) + kept > Config.Pets.Storage then
 		DataService.notify(
@@ -219,16 +236,21 @@ local function hatch(profile, eggId, count)
 
 	session.LastHatch = now
 	data.Coins -= cost
+	data.HatchPity = pity
 	for _, result in results do
 		if not result.Deleted then
 			result.Uid = PetService.givePet(profile, result.Id, result.Tier, result.Level)
 		end
-		announce(player, result, odds, tierOdds)
+		announce(player, result, result.Odds, tierOdds)
+		result.Odds = nil
 	end
 	data.Stats.EggsHatched += count
-	DataService.change(profile, "Coins", "Stats")
+	DataService.change(profile, "Coins", "Stats", "HatchPity")
 	afterInventoryChange(profile)
 	hatchedRemote:FireClient(player, eggId, results)
+	if pityUsed then
+		DataService.notify(player, "🍀 Pity guaranteed a Rare-or-better pet!", "Reward")
+	end
 end
 
 local function setEquipped(profile, uid, equip)

@@ -141,15 +141,25 @@ local function spawnOrb(zoneIndex: number)
 	orbs[zoneIndex][orb] = { Kind = if lucky then "LuckyClover" else "Clover", Position = position }
 end
 
--- Clovers give Luck XP (never coins; coins come only from tapping).
+-- Clovers give Luck XP (never coins; coins come only from tapping). Grabbing them in quick
+-- succession builds a streak that multiplies the XP, up to Config.Orbs.StreakMaxMultiplier; a
+-- gap longer than Config.Orbs.StreakWindowSeconds resets it.
 local function collectOrb(profile, orb: Model, clover: Clover, zoneIndex: number)
 	orbs[zoneIndex][orb] = nil
 	local position = clover.Position
 	local kind = clover.Kind
 	orb:Destroy()
 
+	local session = profile.Session
+	local now = os.clock()
+	session.CloverStreak = if now - (session.LastCloverAt or 0) <= Config.Orbs.StreakWindowSeconds
+		then (session.CloverStreak or 0) + 1
+		else 0
+	session.LastCloverAt = now
+
 	local data = profile.Data
-	local amount = Formula.cloverValue(zoneIndex, kind == "LuckyClover")
+	local base = Formula.cloverValue(zoneIndex, kind == "LuckyClover")
+	local amount = math.floor(base * Formula.cloverStreakMultiplier(session.CloverStreak) + 0.5)
 	local levelBefore = Formula.luckLevel(data.LuckXP)
 	data.LuckXP += amount
 	data.Stats.OrbsCollected += 1

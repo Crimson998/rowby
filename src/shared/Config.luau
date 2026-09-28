@@ -111,6 +111,9 @@ Config.PetLevels = {
 ]]
 Config.Hatch = {
 	LevelWeights = { 1000, 600, 360, 216, 130, 78, 47, 28, 17, 10 },
+	-- Hatches without a Rare-or-better pet (a "Lucky" rarity, see Config.Rarities) before this
+	-- guarantee the next hatch rolls one, resetting the counter. Shown as pity on every egg.
+	PityMisses = 40,
 }
 
 Config.Rebirth = {
@@ -131,6 +134,11 @@ Config.Orbs = {
 	LuckyMultiplier = 10,
 	BaseMagnetRadius = 7,
 	MagnetPerLevel = 3,
+	-- Grabbing clovers within this long of the last one keeps a streak alive, multiplying Luck
+	-- XP by 1 + streak * StreakStep up to StreakMaxMultiplier; a gap longer than this resets it.
+	StreakWindowSeconds = 2.5,
+	StreakStep = 0.08,
+	StreakMaxMultiplier = 2,
 }
 
 -- Luck level from clovers. Reaching level L takes BaseXP * L^Exponent Luck XP in total,

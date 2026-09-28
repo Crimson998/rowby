@@ -299,6 +299,45 @@ test("rolls match the displayed odds", function()
 	end
 end)
 
+-- Hatch pity ----------------------------------------------------------------------------------
+
+test("a guaranteed roll only ever gives Rare-or-better pets, still summing to 100%", function()
+	for _, egg in Eggs.List do
+		for _, luck in { 1, 2, 4.5 } do
+			local total = 0
+			for _, entry in Formula.eggOdds(egg.Id, luck, true) do
+				local rarity = Config.Rarities[Pets[entry.Id].Rarity]
+				if rarity.Lucky then
+					assert(entry.Chance > 0, egg.Id .. " " .. entry.Id .. " should still be possible")
+				else
+					eq(entry.Chance, 0, egg.Id .. " " .. entry.Id .. " must be excluded by the guarantee")
+				end
+				total += entry.Chance
+			end
+			near(total, 1, 1e-9, egg.Id .. " guaranteed total at luck " .. luck)
+		end
+	end
+end)
+
+test("rollEgg never returns a Common or Uncommon pet once guaranteed", function()
+	local rng = Random.new(11)
+	for _ = 1, 2000 do
+		local petId = Formula.rollEgg("Meadow", 1, rng, true)
+		local rarity = Config.Rarities[Pets[petId].Rarity]
+		assert(rarity.Lucky, "guaranteed roll gave " .. petId .. " (" .. Pets[petId].Rarity .. ")")
+	end
+end)
+
+-- Clover streaks -------------------------------------------------------------------------------
+
+test("clover streak multiplier grows with streak and caps out", function()
+	eq(Formula.cloverStreakMultiplier(0), 1, "no streak")
+	near(Formula.cloverStreakMultiplier(1), 1 + Config.Orbs.StreakStep, 1e-9, "one streak")
+	near(Formula.cloverStreakMultiplier(5), 1 + 5 * Config.Orbs.StreakStep, 1e-9, "five streak")
+	eq(Formula.cloverStreakMultiplier(1000), Config.Orbs.StreakMaxMultiplier, "caps at the max")
+	assert(Config.Orbs.StreakMaxMultiplier > 1, "cap must allow some bonus")
+end)
+
 -- Economy ------------------------------------------------------------------------------------
 
 test("a brand new player earns 1 coin per tap", function()
