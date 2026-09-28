@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
+local Eggs = require(Shared.Eggs)
 local Format = require(Shared.Format)
 local Formula = require(Shared.Formula)
 local Pets = require(Shared.Pets)
@@ -348,7 +349,20 @@ local function rebuild()
 			end
 			card(index, petId, 1, nil, not discovered)
 		end
-		info.Text = string.format("Discovered %d/%d  ·  New pets give 💎!", found, #order)
+		local completedAreas = 0
+		for _, egg in Eggs.List do
+			if Formula.eggIndexComplete(data, egg.Id) then
+				completedAreas += 1
+			end
+		end
+		info.Text = string.format(
+			"Discovered %d/%d  ·  New pets give 💎!  ·  %d/%d areas complete (+%d%% coins)",
+			found,
+			#order,
+			completedAreas,
+			#Eggs.List,
+			math.floor(Formula.areaIndexBonus(data) * 100 + 0.5)
+		)
 		info.TextColor3 = Theme.Colors.Text
 		grid.Size = UDim2.new(1, 0, 1, -TOOLBAR_HEIGHT)
 		refreshDetail(nil)

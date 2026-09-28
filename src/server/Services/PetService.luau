@@ -107,6 +107,19 @@ function PetService.givePet(profile, petId: string, tier: number?, level: number
 		local rarity = Config.Rarities[Pets[petId].Rarity]
 		DataService.addGems(profile, rarity.DiscoveryGems)
 		DataService.change(profile, "Index")
+
+		local egg = Eggs.ByPet[petId]
+		if egg and Formula.eggIndexComplete(data, egg.Id) then
+			DataService.notify(
+				profile.Player,
+				"🏅 "
+					.. Zones.List[egg.Zone].Name
+					.. " Pet Index complete! +"
+					.. math.floor(Config.Bonuses.AreaIndexCoinBonus * 100 + 0.5)
+					.. "% coins, forever.",
+				"Reward"
+			)
+		end
 	end
 	DataService.change(profile, "Pets")
 	return uid, discovered

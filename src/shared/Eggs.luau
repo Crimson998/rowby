@@ -100,11 +100,17 @@ local List: { Egg } = {
 }
 
 local ById: { [string]: Egg } = {}
+-- Reverse lookup used for the area Pet Index: which egg (and so which area) a pet belongs to.
+local ByPet: { [string]: Egg } = {}
 for _, egg in List do
 	ById[egg.Id] = egg
+	for _, entry in egg.Pets do
+		ByPet[entry.Id] = egg
+	end
 end
 
 return {
 	List = List,
 	ById = ById,
+	ByPet = ByPet,
 }

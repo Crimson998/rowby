@@ -67,6 +67,31 @@ function Formula.rebirthMultiplier(rebirths: number): number
 	return 1 + rebirths * Config.Rebirth.MultiplierPerRebirth
 end
 
+-- True once every pet in an egg's table has been discovered (that area's Pet Index is complete).
+function Formula.eggIndexComplete(data, eggId: string): boolean
+	local egg = Eggs.ById[eggId]
+	if not egg then
+		return false
+	end
+	for _, entry in egg.Pets do
+		if not data.Index[entry.Id] then
+			return false
+		end
+	end
+	return true
+end
+
+-- Permanent coin bonus from completed area Pet Indexes, Config.Bonuses.AreaIndexCoinBonus each.
+function Formula.areaIndexBonus(data): number
+	local completed = 0
+	for _, egg in Eggs.List do
+		if Formula.eggIndexComplete(data, egg.Id) then
+			completed += 1
+		end
+	end
+	return completed * Config.Bonuses.AreaIndexCoinBonus
+end
+
 function Formula.masteryMultiplier(level: number): number
 	return 1 + level * 0.1
 end
@@ -102,6 +127,7 @@ end
 
 function Formula.coinMultiplier(data, session, includeTemporary: boolean): number
 	local multiplier = (1 + Formula.petBonus(data))
+		* (1 + Formula.areaIndexBonus(data))
 		* Formula.rebirthMultiplier(data.Rebirths)
 		* Formula.zoneMultiplier(data)
 		* Formula.masteryMultiplier(Formula.level(data, "CoinMastery"))
