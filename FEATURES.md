@@ -37,7 +37,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **Clans** (L): groups with shared goals and a clan leaderboard. Why: long-term social retention.
 - **Gift passes** (M): buy a pass for another player in the server. Why: social spending without pressure.
 - **Inspect players** (S): click a player to see their team and index progress. Why: status and showing off.
-- **Low-detail mode** (S): a setting that hides decorations, particles and other pets. Why: smoother play on low-end phones.
 - **Translation** (M): localization tables for UI text, starting with the most common languages. Why: reaches non-English players.
 - **Live codes** (S): codes stored in a DataStore and edited from the admin panel. Why: new codes without publishing an update.
 - **Save rollback** (M): admin command to restore a player's earlier save version. Why: fixes lost-progress reports.
@@ -55,6 +54,7 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Low-detail mode**: a ⚙️ Settings toggle that hides map decorations (tagged `Decor`) and pet sparkles for smoother play on low-end phones; other players' pets already have their own toggle.
 - **Tiered hatches**: each hatch rolls the pet, its tier and its level (1 to 10) separately, luck improves all three, and pets have levels that multiply their power.
 - **Index rewards**: discovering every pet in an area's egg completes that area's Pet Index for a permanent +15% coin bonus, stacking per area; shown in 🐾 Pets and 📊 Stats, with a toast when an area completes.
 - **Hatch pity**: an egg guarantees a Rare-or-better pet once 40 hatches pass without one, resetting the counter; progress ("Pity: N to guaranteed Rare+") shows on every egg's odds board, and a toast fires when the guarantee kicks in.

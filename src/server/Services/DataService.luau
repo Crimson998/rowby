@@ -92,6 +92,8 @@ local TEMPLATE = {
 		Sounds = true,
 		Music = true,
 		ShowOtherPets = true,
+		-- Hides map decorations and pet sparkles for smoother play on low-end devices.
+		LowDetail = false,
 		-- Hatched pets of these rarities are deleted right away (new discoveries are always kept).
 		AutoDelete = { Common = false, Uncommon = false, Rare = false, Epic = false },
 	},

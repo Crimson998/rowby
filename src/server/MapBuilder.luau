@@ -407,7 +407,12 @@ local function buildZone(zone)
 
 	local decor = DECOR[zone.Theme]
 	if decor then
-		decor(folder, Random.new(zone.Index * 7919), zone.Index)
+		-- Tagged so clients with Low-detail mode on can hide it.
+		local decorFolder = Instance.new("Folder")
+		decorFolder.Name = "Decor"
+		decorFolder.Parent = folder
+		tag(decorFolder, "Decor")
+		decor(decorFolder, Random.new(zone.Index * 7919), zone.Index)
 	end
 end
 

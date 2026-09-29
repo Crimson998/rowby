@@ -1,6 +1,6 @@
 --[[
 	⚙️ Settings: hatch animation, auto-equip, auto-delete by rarity, music, sounds and other players'
-	pets. Saved on the server with the rest of your data.
+	pets and low-detail mode. Saved on the server with the rest of your data.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,7 +18,7 @@ local SettingsWindow = {}
 local NAME = "Settings"
 
 function SettingsWindow.build()
-	local body = Windows.create(NAME, "⚙️ Settings", Theme.Colors.Gray, Vector2.new(560, 470))
+	local body = Windows.create(NAME, "⚙️ Settings", Theme.Colors.Gray, Vector2.new(560, 520))
 	local list = Util.new("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -138,6 +138,7 @@ function SettingsWindow.build()
 	toggle("Music", nil, "Music")
 	toggle("Sound effects", nil, "Sounds")
 	toggle("Show other players' pets", "Turn off if the game feels slow", "ShowOtherPets")
+	toggle("Low-detail mode", "Hides decorations and pet sparkles", "LowDetail")
 
 	State.watch({ "Settings" }, function()
 		for _, refresh in refreshers do

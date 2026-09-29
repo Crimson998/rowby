@@ -28,6 +28,9 @@ local VALIDATORS: { [string]: (any) -> boolean } = {
 	ShowOtherPets = function(value)
 		return type(value) == "boolean"
 	end,
+	LowDetail = function(value)
+		return type(value) == "boolean"
+	end,
 }
 
 local function setSetting(profile, key, value)

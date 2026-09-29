@@ -17,7 +17,7 @@ local State = require(script.Parent.Parent.State)
 
 local PetFollow = {}
 
-type Rendered = { Key: string, Models: { Model }, Current: { CFrame } }
+type Rendered = { Key: string, LowDetail: boolean, Models: { Model }, Current: { CFrame } }
 
 local PER_ROW = 4
 local SPACING = 3.2
@@ -36,9 +36,14 @@ local function clear(player: Player)
 	end
 end
 
+local function isLowDetail(): boolean
+	local settings = State.Data.Settings
+	return settings ~= nil and settings.LowDetail == true
+end
+
 local function build(player: Player, key: string): Rendered
 	clear(player)
-	local entry: Rendered = { Key = key, Models = {}, Current = {} }
+	local entry: Rendered = { Key = key, LowDetail = isLowDetail(), Models = {}, Current = {} }
 	for token in string.gmatch(key, "[^,]+") do
 		-- "Doggy" or "Doggy:3" (tier 3)
 		local petId, tierText = string.match(token, "^([^:]+):?(%d*)$")
@@ -47,7 +52,7 @@ local function build(player: Player, key: string): Rendered
 			local model = PetModels.pet(petId, tier)
 			local rarity = Pets[petId].Rarity
 			local tierDef = Config.Tiers[tier] or Config.Tiers[1]
-			if tier > 1 or Config.Rarities[rarity].Announce then
+			if not entry.LowDetail and (tier > 1 or Config.Rarities[rarity].Announce) then
 				local sparkles = Instance.new("Sparkles")
 				sparkles.SparkleColor = if tier > 1 then tierDef.Accent else Config.Rarities[rarity].Color
 				sparkles.Parent = model.PrimaryPart
@@ -74,7 +79,7 @@ local function update(dt: number)
 			continue
 		end
 		local entry = rendered[player]
-		if not entry or entry.Key ~= key then
+		if not entry or entry.Key ~= key or entry.LowDetail ~= isLowDetail() then
 			entry = build(player, key)
 		end
 
