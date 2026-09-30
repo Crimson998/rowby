@@ -15,6 +15,7 @@ local Pets = require(Shared.Pets)
 local Zones = require(Shared.Zones)
 
 local Actions = require(script.Parent.Parent.Actions)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local WorldService = require(script.Parent.WorldService)
 
@@ -245,6 +246,8 @@ local function hatch(profile, eggId, count)
 		result.Odds = nil
 	end
 	data.Stats.EggsHatched += count
+	AnalyticsService.sink(player, "Coins", data.Coins, cost, "Egg_" .. eggId)
+	AnalyticsService.funnel(player, "FirstHatch")
 	DataService.change(profile, "Coins", "Stats", "HatchPity")
 	afterInventoryChange(profile)
 	hatchedRemote:FireClient(player, eggId, results)

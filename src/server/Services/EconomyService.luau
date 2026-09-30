@@ -14,6 +14,7 @@ local Upgrades = require(Shared.Upgrades)
 local Zones = require(Shared.Zones)
 
 local Actions = require(script.Parent.Parent.Actions)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local WorldService = require(script.Parent.WorldService)
 
@@ -65,6 +66,7 @@ local function buyUpgrade(profile, upgradeId, max)
 	end
 	local data = profile.Data
 	local bought = 0
+	local spent = 0
 	while bought < (if max == true then upgrade.MaxLevel else 1) do
 		local level = Formula.level(data, upgradeId)
 		local cost = Formula.upgradeCost(upgradeId, level)
@@ -72,6 +74,7 @@ local function buyUpgrade(profile, upgradeId, max)
 			break
 		end
 		data[upgrade.Currency] -= cost
+		spent += cost
 		data.Upgrades[upgradeId] = level + 1
 		bought += 1
 	end
@@ -83,6 +86,7 @@ local function buyUpgrade(profile, upgradeId, max)
 		end
 		return
 	end
+	AnalyticsService.sink(profile.Player, upgrade.Currency, data[upgrade.Currency], spent, "Upgrade_" .. upgradeId)
 	DataService.change(profile, upgrade.Currency, "Upgrades")
 	if bought > 1 then
 		DataService.notify(profile.Player, "⬆️ " .. upgrade.Name .. " +" .. bought .. " levels", "Success")
@@ -112,6 +116,9 @@ local function rebirth(profile)
 	end
 	data.Rebirths += 1
 	DataService.addGems(profile, gems)
+	AnalyticsService.sink(profile.Player, "Coins", 0, cost, "Rebirth")
+	AnalyticsService.source(profile.Player, "Gems", data.Gems, gems, "Rebirth")
+	AnalyticsService.funnel(profile.Player, "FirstRebirth")
 	DataService.change(profile, "Coins", "Upgrades", "Rebirths")
 	effectRemote:FireClient(profile.Player, "Rebirth", data.Rebirths, gems)
 end
@@ -132,6 +139,10 @@ function EconomyService.unlockZone(profile, zoneIndex: number)
 	end
 	data.Coins -= zone.UnlockCost
 	data.HighestZone = zoneIndex
+	AnalyticsService.sink(profile.Player, "Coins", data.Coins, zone.UnlockCost, "Area" .. zoneIndex)
+	if zoneIndex >= 2 then
+		AnalyticsService.funnel(profile.Player, "Area2")
+	end
 	DataService.change(profile, "Coins", "HighestZone")
 	effectRemote:FireClient(profile.Player, "ZoneUnlocked", zoneIndex)
 end
