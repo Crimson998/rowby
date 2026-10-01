@@ -16,6 +16,7 @@ local Zones = require(Shared.Zones)
 
 local Actions = require(script.Parent.Parent.Actions)
 local AnalyticsService = require(script.Parent.AnalyticsService)
+local BadgeService = require(script.Parent.BadgeService)
 local DataService = require(script.Parent.DataService)
 local WorldService = require(script.Parent.WorldService)
 
@@ -108,6 +109,7 @@ function PetService.givePet(profile, petId: string, tier: number?, level: number
 		local rarity = Config.Rarities[Pets[petId].Rarity]
 		DataService.addGems(profile, rarity.DiscoveryGems)
 		DataService.change(profile, "Index")
+		BadgeService.discovered(profile.Player, petId, data.Index)
 
 		local egg = Eggs.ByPet[petId]
 		if egg and Formula.eggIndexComplete(data, egg.Id) then
@@ -248,6 +250,7 @@ local function hatch(profile, eggId, count)
 	data.Stats.EggsHatched += count
 	AnalyticsService.sink(player, "Coins", data.Coins, cost, "Egg_" .. eggId)
 	AnalyticsService.funnel(player, "FirstHatch")
+	BadgeService.firstHatch(player)
 	DataService.change(profile, "Coins", "Stats", "HatchPity")
 	afterInventoryChange(profile)
 	hatchedRemote:FireClient(player, eggId, results)

@@ -270,4 +270,16 @@ Config.Sounds = {
 	Error = "rbxasset://sounds/clickfast.wav",
 }
 
+--[[
+	Roblox badge ids. Create each badge on the Creator Dashboard, then paste its id here.
+	0 means "not set up yet" and that badge is skipped. Area badges are keyed by area number.
+]]
+Config.Badges = {
+	FirstHatch = 0,
+	FirstRebirth = 0,
+	SecretPet = 0,
+	FullIndex = 0,
+	Areas = { [2] = 0, [3] = 0, [4] = 0, [5] = 0 },
+}
+
 return Config

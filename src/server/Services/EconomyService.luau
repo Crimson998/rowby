@@ -15,6 +15,7 @@ local Zones = require(Shared.Zones)
 
 local Actions = require(script.Parent.Parent.Actions)
 local AnalyticsService = require(script.Parent.AnalyticsService)
+local BadgeService = require(script.Parent.BadgeService)
 local DataService = require(script.Parent.DataService)
 local WorldService = require(script.Parent.WorldService)
 
@@ -119,6 +120,7 @@ local function rebirth(profile)
 	AnalyticsService.sink(profile.Player, "Coins", 0, cost, "Rebirth")
 	AnalyticsService.source(profile.Player, "Gems", data.Gems, gems, "Rebirth")
 	AnalyticsService.funnel(profile.Player, "FirstRebirth")
+	BadgeService.firstRebirth(profile.Player)
 	DataService.change(profile, "Coins", "Upgrades", "Rebirths")
 	effectRemote:FireClient(profile.Player, "Rebirth", data.Rebirths, gems)
 end
@@ -140,6 +142,7 @@ function EconomyService.unlockZone(profile, zoneIndex: number)
 	data.Coins -= zone.UnlockCost
 	data.HighestZone = zoneIndex
 	AnalyticsService.sink(profile.Player, "Coins", data.Coins, zone.UnlockCost, "Area" .. zoneIndex)
+	BadgeService.area(profile.Player, zoneIndex)
 	if zoneIndex >= 2 then
 		AnalyticsService.funnel(profile.Player, "Area2")
 	end

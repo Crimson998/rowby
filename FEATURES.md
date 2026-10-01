@@ -17,7 +17,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 ### Now
 
 - **Launch setup** (S): real pass and product ids, item icons, game icon, thumbnails and description. Why: Robux items don't work in live servers until the ids are set.
-- **Badges** (S): Roblox badges for first hatch, each area, first rebirth, a Secret pet and a full index. Why: cheap goals that show on player profiles.
 - **First-session tutorial** (M): short prompts to tap, hatch, equip, grab a clover and open Upgrades. Why: players decide whether to stay in the first few minutes.
 - **Music and ambience** (S, partly done): area music with crossfades and a Music on/off setting are shipped; still to add are ambient sounds per area and a volume slider. Why: the game has effects but little atmosphere.
 
@@ -61,3 +60,4 @@ Noted to fix later; not features.
 - **Weekly quests**: three bigger goals (6x the daily goal, 5x the gems) alongside the daily Quests, refreshed every 7 days; shown in a new section of the 📜 Quests window with a countdown to the next refresh.
 - **Offline earnings**: coins for time away, at 15% of your active earning rate, capped at 3 hours and skipped for disconnects under 2 minutes. They wait in a 💤 Offline window (menu button with a badge) that opens on join, shows how long you were away, and has a Collect button; it also explains the rules and estimates a full stretch away. Uncollected coins carry over up to the cap.
 - **Analytics**: a `AnalyticsService` logs a first-session funnel (join, first hatch, area 2, first rebirth, each once per visit) and economy events for coins and gems spent on eggs, areas, upgrades and rebirth and gems earned from rebirth. Upgrade spending is logged too; Robux purchases are not yet.
+- **Badges**: a `BadgeService` awards Roblox badges for first hatch, each area (2 to 5), first rebirth, a Secret pet and a full Pet Index. Ids go in `Config.Badges` (0 = not created yet, skipped); the badges themselves still need creating on the Creator Dashboard.

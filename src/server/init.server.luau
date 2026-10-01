@@ -9,6 +9,7 @@ local Actions = require(script.Actions)
 local ordered = {
 	require(Services.DataService),
 	require(Services.AnalyticsService),
+	require(Services.BadgeService),
 	require(Services.WorldService),
 	require(Services.MonetizationService),
 	require(Services.PetService),
