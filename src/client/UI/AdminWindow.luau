@@ -321,6 +321,22 @@ function AdminWindow.build(): ()
 		end)
 	end
 
+	-- Live codes
+	local codes = section("🎫 Live codes")
+	local codeBox = numberBox(codes, "Code name", "")
+	local codeGems = numberBox(codes, "Gems", "")
+	local codeCoin = numberBox(codes, "2x Coins minutes", "")
+	local codeLuck = numberBox(codes, "2x Luck minutes", "")
+	button(codes, "Add / update code", Theme.Colors.Green, function()
+		run("AddCode", codeBox.Text, codeGems.Text, codeCoin.Text, codeLuck.Text)
+	end)
+	button(codes, "Remove code", Theme.Colors.Red, function()
+		run("RemoveCode", codeBox.Text)
+	end)
+	button(codes, "List codes", Theme.Colors.Gray, function()
+		run("ListCodes")
+	end)
+
 	-- Testing & debug
 	local testing = section("🧪 Testing & debug")
 	local eggIndex = picker(testing, #Eggs.List, function(index)

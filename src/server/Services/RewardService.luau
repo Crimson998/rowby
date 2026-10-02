@@ -14,6 +14,7 @@ local Rewards = require(Shared.Rewards)
 
 local Actions = require(script.Parent.Parent.Actions)
 local DataService = require(script.Parent.DataService)
+local LiveCodes = require(script.Parent.LiveCodes)
 
 local RewardService = {}
 
@@ -182,7 +183,7 @@ local function redeemCode(player: Player, code): (boolean, string)
 	lastCodeAttempt[player] = now
 
 	local normalized = string.upper((string.gsub(code, "%s", "")))
-	local reward = Config.Codes[normalized]
+	local reward = LiveCodes.get(normalized)
 	if not reward then
 		return false, "That code doesn't exist."
 	end
@@ -200,6 +201,7 @@ RewardService.fillQuests = fillQuests
 RewardService.fillWeekly = fillWeekly
 
 function RewardService.Init()
+	LiveCodes.Init()
 	DataService.onLoaded(fillQuests)
 	DataService.onLoaded(fillWeekly)
 	DataService.onRelease(function(profile)
@@ -208,6 +210,7 @@ function RewardService.Init()
 end
 
 function RewardService.Start()
+	LiveCodes.Start()
 	Actions.register("ClaimDaily", claimDaily)
 	Actions.register("ClaimGift", claimGift)
 	Actions.register("ClaimAllGifts", function(profile)

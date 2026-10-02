@@ -19,12 +19,14 @@ local Format = require(Shared.Format)
 local Formula = require(Shared.Formula)
 local Net = require(Shared.Net)
 local Pets = require(Shared.Pets)
+local Rewards = require(Shared.Rewards)
 local Products = require(Shared.Products)
 local Upgrades = require(Shared.Upgrades)
 local Zones = require(Shared.Zones)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local LiveCodes = require(script.Parent.LiveCodes)
 local MonetizationService = require(script.Parent.MonetizationService)
 local PetService = require(script.Parent.PetService)
 local RewardService = require(script.Parent.RewardService)
@@ -311,6 +313,42 @@ COMMANDS.ServerInfo = function(profile)
 			.. Format.multiplier(Formula.luck(profile.Data, profile.Session)),
 	}
 	return true, table.concat(lines, "\n")
+end
+
+-- Live codes ----------------------------------------------------------------------------------
+
+COMMANDS.AddCode = function(profile, code, gems, coinBoost, luckBoost)
+	local name = LiveCodes.normalize(code)
+	if not name then
+		return false, "Code: 3 to 20 letters or numbers."
+	end
+	local reward = Rewards.sanitize({ Gems = gems, CoinBoostMinutes = coinBoost, LuckBoostMinutes = luckBoost })
+	if not reward then
+		return false, "Give the code a reward (gems or boost minutes)."
+	end
+	local ok, reason = LiveCodes.add(name, reward)
+	if not ok then
+		return false, reason or "Failed."
+	end
+	return true, name .. " added: " .. Rewards.describe(reward, profile.Data, profile.Session)
+end
+
+COMMANDS.RemoveCode = function(profile, code)
+	local name = LiveCodes.normalize(code)
+	if not name then
+		return false, "Enter a code."
+	end
+	local ok, reason = LiveCodes.remove(name)
+	return ok, if ok then name .. " removed." else reason or "Failed."
+end
+
+COMMANDS.ListCodes = function(profile)
+	local lines = {}
+	for code, reward in LiveCodes.list() do
+		table.insert(lines, code .. ": " .. Rewards.describe(reward, profile.Data, profile.Session))
+	end
+	table.sort(lines)
+	return true, if #lines > 0 then table.concat(lines, "\n") else "No live codes."
 end
 
 COMMANDS.SaveNow = function(profile)

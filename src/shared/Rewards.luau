@@ -32,6 +32,32 @@ function Rewards.parts(reward, data, session): { string }
 	return parts
 end
 
+-- Largest value each field of a live (admin-created) code may carry.
+Rewards.LiveLimits = {
+	Gems = 10000,
+	CoinSeconds = 3600,
+	CoinBoostMinutes = 120,
+	LuckBoostMinutes = 120,
+}
+
+-- Turns untrusted input (admin panel, DataStore) into a reward table, or nil when it grants
+-- nothing. Unknown fields are dropped, values are floored and clamped to LiveLimits.
+function Rewards.sanitize(input: any): { [string]: number }?
+	if type(input) ~= "table" then
+		return nil
+	end
+	local reward = {}
+	local any = false
+	for key, limit in Rewards.LiveLimits do
+		local value = tonumber(input[key])
+		if value and value == value and value >= 1 then
+			reward[key] = math.floor(math.min(value, limit))
+			any = true
+		end
+	end
+	return if any then reward else nil
+end
+
 function Rewards.describe(reward, data, session): string
 	return table.concat(Rewards.parts(reward, data, session), "  ")
 end

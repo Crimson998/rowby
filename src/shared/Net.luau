@@ -7,6 +7,7 @@
 		Action(name, ...)             every other request, see server init for the list
 		RedeemCode(code) -> (ok, msg) RemoteFunction
 		AdminCommand(name, ...) -> (ok, msg) RemoteFunction, admins only (see AdminService)
+		InspectPlayer(userId) -> info? RemoteFunction, another player's public profile (see SocialService)
 	Server -> Client
 		Sync(payload)                 partial state: { Data = {...}, Session = {...}, Full = bool? }
 		Notify(text, kind)            toast message
@@ -20,7 +21,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local EVENTS = { "Tap", "Action", "Sync", "Notify", "Hatched", "Announce", "OrbCollected", "Effect" }
-local FUNCTIONS = { "RedeemCode", "AdminCommand" }
+local FUNCTIONS = { "RedeemCode", "AdminCommand", "InspectPlayer" }
 
 local IS_SERVER = RunService:IsServer()
 local FOLDER_NAME = "Remotes"

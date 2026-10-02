@@ -36,7 +36,7 @@ type Item = { Window: string, Icon: string, Label: string?, Color: Color3 }
 -- Width of the left and right rails; each holds a 2×2 grid of tiles.
 local RAIL_WIDTH = 180
 local TILE = (RAIL_WIDTH - Theme.Gap) / 2
-local UTILITY = 36
+local UTILITY = 32
 
 local CORE: { Item } = {
 	{ Window = "Pets", Icon = "🐾", Color = Theme.Colors.Orange },
@@ -54,6 +54,7 @@ local REWARDS: { Item } = {
 
 local TOOLS: { Item } = {
 	{ Window = "Stats", Icon = "📊", Color = Theme.Colors.PanelLight },
+	{ Window = "Players", Icon = "👥", Color = Theme.Colors.PanelLight },
 	{ Window = "Codes", Icon = "🎫", Color = Theme.Colors.PanelLight },
 	{ Window = "Settings", Icon = "⚙️", Color = Theme.Colors.PanelLight },
 }
@@ -271,7 +272,7 @@ local function buildRightRail(screen: ScreenGui, openShop: (string) -> ())
 		Size = UDim2.fromOffset(RAIL_WIDTH, UTILITY),
 		BackgroundTransparency = 1,
 		Parent = rail,
-	}, { Util.list(Enum.FillDirection.Horizontal, Theme.Gap, Enum.HorizontalAlignment.Right) })
+	}, { Util.list(Enum.FillDirection.Horizontal, 4, Enum.HorizontalAlignment.Right) })
 	for order, item in TOOLS do
 		local button = Util.button({
 			Name = item.Window,

@@ -168,6 +168,16 @@ test("reward tables only use known fields", function()
 	end
 end)
 
+test("live codes are sanitized and clamped", function()
+	eq(Rewards.sanitize(nil), nil, "non-table")
+	eq(Rewards.sanitize({}), nil, "empty reward")
+	eq(Rewards.sanitize({ Gems = 0, Pet = "Dog" }), nil, "unknown or zero fields grant nothing")
+	local reward = Rewards.sanitize({ Gems = "25.7", CoinBoostMinutes = 1e9, Pet = "Dog" }) :: any
+	eq(reward.Gems, 25, "string values are floored")
+	eq(reward.CoinBoostMinutes, Rewards.LiveLimits.CoinBoostMinutes, "clamped to the limit")
+	eq(reward.Pet, nil, "unknown field dropped")
+end)
+
 test("weekly quests scale up daily quest templates", function()
 	assert(Config.Weekly.Slots > 0, "weekly slots")
 	assert(Config.Weekly.PeriodDays > 0, "weekly period")

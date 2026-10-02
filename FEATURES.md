@@ -34,9 +34,7 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 
 - **Clans** (L): groups with shared goals and a clan leaderboard. Why: long-term social retention.
 - **Gift passes** (M): buy a pass for another player in the server. Why: social spending without pressure.
-- **Inspect players** (S): click a player to see their team and index progress. Why: status and showing off.
 - **Translation** (M): localization tables for UI text, starting with the most common languages. Why: reaches non-English players.
-- **Live codes** (S): codes stored in a DataStore and edited from the admin panel. Why: new codes without publishing an update.
 - **Save rollback** (M): admin command to restore a player's earlier save version. Why: fixes lost-progress reports.
 - **Seasonal areas** (L): themed areas that return each year; their pets stay earnable in later years. Why: events without permanent fear of missing out.
 
@@ -52,6 +50,8 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Inspect players**: a 👥 Players window lists everyone in the server; tapping a name shows their equipped team (tier, level, rarity), rebirths, furthest area, eggs hatched and pet index progress (`SocialService` `InspectPlayer`, rate limited).
+- **Live codes**: codes kept in a DataStore (`LiveCodes`), refreshed every minute on every server and managed from the 🛠 admin panel (add or update with gems and 2x coin/luck boost minutes, remove, list); built-in `Config.Codes` still work and win on a name clash. Rewards are validated and clamped (`Rewards.sanitize`).
 - **Low-detail mode**: a ⚙️ Settings toggle that hides map decorations (tagged `Decor`) and pet sparkles for smoother play on low-end phones; other players' pets already have their own toggle.
 - **Tiered hatches**: each hatch rolls the pet, its tier and its level (1 to 10) separately, luck improves all three, and pets have levels that multiply their power.
 - **Index rewards**: discovering every pet in an area's egg completes that area's Pet Index for a permanent +15% coin bonus, stacking per area; shown in 🐾 Pets and 📊 Stats, with a toast when an area completes.
