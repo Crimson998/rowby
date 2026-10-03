@@ -159,7 +159,9 @@ local function collectOrb(profile, orb: Model, clover: Clover, zoneIndex: number
 
 	local data = profile.Data
 	local base = Formula.cloverValue(zoneIndex, kind == "LuckyClover")
-	local amount = math.floor(base * Formula.cloverStreakMultiplier(session.CloverStreak) + 0.5)
+	-- Random rounding, so a streak step worth +0.3 XP pays 1 XP about 30% of the time.
+	local scaled = base * Formula.cloverStreakMultiplier(session.CloverStreak)
+	local amount = math.floor(scaled) + (if orbRng:NextNumber() < scaled % 1 then 1 else 0)
 	local levelBefore = Formula.luckLevel(data.LuckXP)
 	data.LuckXP += amount
 	data.Stats.OrbsCollected += 1

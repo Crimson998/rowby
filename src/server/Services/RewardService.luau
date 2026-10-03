@@ -97,6 +97,17 @@ local function fillWeekly(profile)
 	if weekly.Start > 0 and now - weekly.Start < Config.Weekly.PeriodDays * 86400 then
 		return
 	end
+	-- Finished quests the player never claimed pay out now instead of vanishing.
+	local autoGems = 0
+	for _, quest in weekly.Quests do
+		if not quest.Claimed and Quests.progress(profile.Data, quest) >= quest.Goal then
+			autoGems += quest.Gems
+		end
+	end
+	if autoGems > 0 then
+		DataService.addGems(profile, autoGems)
+		DataService.notify(profile.Player, "📅 Unclaimed weekly quests paid out: 💎 " .. autoGems, "Reward")
+	end
 	local used = {}
 	local quests = {}
 	while #quests < Config.Weekly.Slots do

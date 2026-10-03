@@ -43,9 +43,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 Noted to fix later; not features.
 
 - **Material not displaying properly**: the Golden tier's `PetGold` MaterialVariant doesn't show correctly on repainted custom pet models (see `CustomModels.paintPart`).
-- **Hatch pity is shared across all eggs**: one counter (`HatchPity`) covers every egg, so a player can build up misses on the cheap Meadow egg and spend the guaranteed Rare-or-better on an expensive egg. It should be one counter per egg.
-- **Clover streaks do nothing early in the Meadow**: clovers there give 1 Luck XP and the streak bonus is rounded (`WorldService.collectOrb`), so the first 6 clovers in a streak still give 1 XP before it jumps to 2. Use random rounding or fractional XP so every step counts.
-- **Unclaimed weekly quests are lost**: a finished but unclaimed weekly quest disappears when the week refreshes (`RewardService.fillWeekly`). Claim finished quests automatically on refresh.
 - **README is out of date**: it doesn't describe index rewards, hatch pity, clover streaks, weekly quests or offline earnings.
 
 ## Shipped
@@ -61,3 +58,6 @@ Noted to fix later; not features.
 - **Offline earnings**: coins for time away, at 15% of your active earning rate, capped at 3 hours and skipped for disconnects under 2 minutes. They wait in a 💤 Offline window (menu button with a badge) that opens on join, shows how long you were away, and has a Collect button; it also explains the rules and estimates a full stretch away. Uncollected coins carry over up to the cap.
 - **Analytics**: a `AnalyticsService` logs a first-session funnel (join, first hatch, area 2, first rebirth, each once per visit) and economy events for coins and gems spent on eggs, areas, upgrades and rebirth and gems earned from rebirth. Upgrade spending is logged too; Robux purchases are not yet.
 - **Badges**: a `BadgeService` awards Roblox badges for first hatch, each area (2 to 5), first rebirth, a Secret pet and a full Pet Index. Ids go in `Config.Badges` (0 = not created yet, skipped); the badges themselves still need creating on the Creator Dashboard.
+- **Per-egg hatch pity**: pity is now counted separately for each egg (`EggPity`), so misses on a cheap egg no longer carry to an expensive one; each egg's odds board shows its own progress. Old shared pity progress resets.
+- **Clover streak rounding**: streak-boosted Luck XP uses random rounding, so every streak step counts even when clovers give 1 XP.
+- **Weekly quests auto-claim**: finished but unclaimed weekly quests pay their gems (with a toast) when the week refreshes instead of disappearing.

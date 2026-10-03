@@ -55,8 +55,8 @@ local TEMPLATE = {
 	NextPetUid = 1,
 	-- [petId] = true once discovered
 	Index = {},
-	-- Hatches since the last Rare-or-better pet; see Config.Hatch.PityMisses.
-	HatchPity = 0,
+	-- [eggId] = hatches of that egg since its last Rare-or-better pet; see Config.Hatch.PityMisses.
+	EggPity = {},
 	-- Seconds remaining; boosts only tick down while you're playing.
 	Boosts = { Coins = 0, Luck = 0 },
 	Daily = { Last = 0, Streak = 0 },

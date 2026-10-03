@@ -201,7 +201,7 @@ local function hatch(profile, eggId, count)
 	local seen = {}
 	local kept = 0
 	-- Hatch pity: guarantee a Rare-or-better pet once misses reach Config.Hatch.PityMisses.
-	local pity = data.HatchPity or 0
+	local pity = data.EggPity[eggId] or 0
 	local pityUsed = false
 	for _ = 1, count do
 		local guarantee = pity >= Config.Hatch.PityMisses
@@ -239,7 +239,7 @@ local function hatch(profile, eggId, count)
 
 	session.LastHatch = now
 	data.Coins -= cost
-	data.HatchPity = pity
+	data.EggPity[eggId] = if pity > 0 then pity else nil
 	for _, result in results do
 		if not result.Deleted then
 			result.Uid = PetService.givePet(profile, result.Id, result.Tier, result.Level)
@@ -251,7 +251,7 @@ local function hatch(profile, eggId, count)
 	AnalyticsService.sink(player, "Coins", data.Coins, cost, "Egg_" .. eggId)
 	AnalyticsService.funnel(player, "FirstHatch")
 	BadgeService.firstHatch(player)
-	DataService.change(profile, "Coins", "Stats", "HatchPity")
+	DataService.change(profile, "Coins", "Stats", "EggPity")
 	afterInventoryChange(profile)
 	hatchedRemote:FireClient(player, eggId, results)
 	if pityUsed then

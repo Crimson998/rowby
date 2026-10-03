@@ -229,11 +229,12 @@ end
 
 -- Hatch pity progress, updated independently of the luck-gated odds refresh above.
 function refreshPity()
-	local remaining = math.max(0, Config.Hatch.PityMisses - (State.Data.HatchPity or 0))
-	local text = if remaining <= 0
-		then "🍀 Next hatch: guaranteed Rare+!"
-		else "🍀 Pity: " .. remaining .. " to guaranteed Rare+"
-	for _, board in eggBoards do
+	local pities = State.Data.EggPity or {}
+	for eggId, board in eggBoards do
+		local remaining = math.max(0, Config.Hatch.PityMisses - (pities[eggId] or 0))
+		local text = if remaining <= 0
+			then "🍀 Next hatch: guaranteed Rare+!"
+			else "🍀 Pity: " .. remaining .. " to guaranteed Rare+"
 		local frame = board:FindFirstChildOfClass("Frame") :: Frame
 		local label = frame:FindFirstChild("Pity") :: TextLabel?
 		if label then
@@ -518,7 +519,7 @@ function World.start()
 	CollectionService:GetInstanceAddedSignal("EggStand"):Connect(buildEggBoard)
 	CollectionService:GetInstanceAddedSignal("ZoneGate"):Connect(refreshGates)
 	State.watch({ "Upgrades", "Boosts", "HighestZone", "LuckXP", "Session.Passes" }, refreshEggBoards)
-	State.watch({ "HatchPity" }, refreshPity)
+	State.watch({ "EggPity" }, refreshPity)
 	State.watch({ "HighestZone" }, function()
 		lastLuck = -1
 		refreshEggBoards()
