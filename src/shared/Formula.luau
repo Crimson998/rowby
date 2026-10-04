@@ -186,6 +186,17 @@ function Formula.luckLevel(xp: number): number
 	return math.min(level, Config.Luck.MaxLevel)
 end
 
+-- The highest Luck level a player with this many rebirths can reach.
+function Formula.luckCap(rebirths: number?): number
+	local cap = Config.Luck.StartCap + math.max(rebirths or 0, 0) * Config.Luck.CapPerRebirth
+	return math.min(cap, Config.Luck.MaxLevel)
+end
+
+-- A player's Luck level: their clover XP level, held down to the cap their rebirths allow.
+function Formula.luckLevelOf(data): number
+	return math.min(Formula.luckLevel(data.LuckXP or 0), Formula.luckCap(data.Rebirths))
+end
+
 -- Coins equal to `seconds` of tapping at the estimated tap rate.
 function Formula.rewardCoins(data, session, seconds: number): number
 	return math.max(50, math.floor(Formula.baseTapValue(data, session) * Config.Tap.EstimatedPerSecond * seconds))
@@ -221,7 +232,7 @@ export type LuckBreakdown = {
 
 -- Where the player's luck comes from. Luck multiplies the weight of Rare-and-better pets.
 function Formula.luckBreakdown(data, session): LuckBreakdown
-	local level = Formula.luckLevel(data.LuckXP or 0)
+	local level = Formula.luckLevelOf(data)
 	local fromLevel = level * Config.Luck.PerLevel
 	local fromUpgrade = Formula.level(data, "Luck") * 0.1
 	local fromPass = if session.Passes.Lucky then Config.Bonuses.LuckyPassLuck else 0

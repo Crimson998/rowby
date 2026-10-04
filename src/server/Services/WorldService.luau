@@ -162,13 +162,18 @@ local function collectOrb(profile, orb: Model, clover: Clover, zoneIndex: number
 	-- Random rounding, so a streak step worth +0.3 XP pays 1 XP about 30% of the time.
 	local scaled = base * Formula.cloverStreakMultiplier(session.CloverStreak)
 	local amount = math.floor(scaled) + (if orbRng:NextNumber() < scaled % 1 then 1 else 0)
-	local levelBefore = Formula.luckLevel(data.LuckXP)
+	-- At the Luck cap clovers stop paying (progress toward the next level stops at 1 XP short),
+	-- which is the cue to rebirth.
+	local cap = Formula.luckCap(data.Rebirths)
+	local room = math.max(Formula.luckXPForLevel(cap + 1) - 1 - data.LuckXP, 0)
+	amount = math.min(amount, room)
+	local levelBefore = Formula.luckLevelOf(data)
 	data.LuckXP += amount
 	data.Stats.OrbsCollected += 1
 	DataService.change(profile, "LuckXP", "Stats")
 	Net.event("OrbCollected"):FireClient(profile.Player, position, kind, amount)
 
-	local levelAfter = Formula.luckLevel(data.LuckXP)
+	local levelAfter = Formula.luckLevelOf(data)
 	if levelAfter > levelBefore then
 		Net.event("Effect"):FireClient(profile.Player, "LuckLevel", levelAfter)
 	end

@@ -27,7 +27,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **More areas** (M each): areas 6 to 8 with new eggs, pets and themes after Cosmic Void. Why: late-game players run out of goals.
 - **Pet abilities** (M): some pets gain a perk, such as auto-collecting clovers, faster hatching or bonus gems. Why: pets matter beyond one power number.
 - **Pet set bonuses** (M): pets belong to sets (by area, family or element); equipping 2, 4 or a full set unlocks stacking bonuses, like Diablo item sets: more coins, more luck, then a unique perk. Why: rewards building a team instead of just equipping the strongest pets, and gives older pets a use.
-- **Rebirth raises the luck cap** (M): the Luck level cap starts lower and grows with each rebirth; clovers collected at the cap are wasted, so capping out is the signal to rebirth. Why: links the two core tracks (coins and luck) and gives rebirth a clear purpose beyond a coin multiplier.
 - **Rebirth shop** (M): rebirth tokens spent on permanent perks, such as storage or auto-collect. Why: deepens the long-term loop.
 
 ### Later
@@ -47,6 +46,7 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Rebirth raises the luck cap**: Luck level is capped at 30 plus 15 per rebirth (up to level 200, `Config.Luck`); at the cap clovers give no XP, the 🍀 HUD shows "(cap)", and the 📊 Stats and 🔁 Rebirth windows show the next cap. Saves already above their cap keep their XP but play at the cap until they rebirth.
 - **Inspect players**: a 👥 Players window lists everyone in the server; tapping a name shows their equipped team (tier, level, rarity), rebirths, furthest area, eggs hatched and pet index progress (`SocialService` `InspectPlayer`, rate limited).
 - **Live codes**: codes kept in a DataStore (`LiveCodes`), refreshed every minute on every server and managed from the 🛠 admin panel (add or update with gems and 2x coin/luck boost minutes, remove, list); built-in `Config.Codes` still work and win on a name clash. Rewards are validated and clamped (`Rewards.sanitize`).
 - **Low-detail mode**: a ⚙️ Settings toggle that hides map decorations (tagged `Decor`) and pet sparkles for smoother play on low-end phones; other players' pets already have their own toggle.

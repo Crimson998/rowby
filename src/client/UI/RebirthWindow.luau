@@ -40,7 +40,7 @@ function RebirthWindow.build()
 	Util.label({
 		Size = UDim2.new(1, 0, 0, 44),
 		Position = UDim2.fromOffset(0, 176),
-		Text = "Resets your coins and Tap Power.\nKeeps pets, areas, gems and every other upgrade.",
+		Text = "Resets your coins and Tap Power.\nKeeps pets, areas, gems, Luck and every other upgrade.\nEach rebirth raises your Luck level cap.",
 		TextColor3 = Theme.Colors.SubText,
 		Parent = body,
 	})
@@ -63,7 +63,12 @@ function RebirthWindow.build()
 			Format.multiplier(Formula.rebirthMultiplier(data.Rebirths)),
 			Format.multiplier(Formula.rebirthMultiplier(data.Rebirths + 1))
 		)
-		reward.Text = "Reward: 💎 " .. Formula.rebirthGems(data.Rebirths)
+		reward.Text = "Reward: 💎 "
+			.. Formula.rebirthGems(data.Rebirths)
+			.. "  ·  🍀 Luck cap Lv "
+			.. Formula.luckCap(data.Rebirths)
+			.. " → "
+			.. Formula.luckCap(data.Rebirths + 1)
 		setProgress(data.Coins / cost, "🪙 " .. Format.number(data.Coins) .. " / " .. Format.number(cost))
 		local ready = data.Coins >= cost
 		button.BackgroundColor3 = if ready then Theme.Colors.Green else Theme.Colors.Disabled

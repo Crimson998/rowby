@@ -192,13 +192,16 @@ local function buildCurrencies(parent: Instance, openShop: (string) -> ())
 		Parent = luck,
 	})
 
-	State.watch({ "LuckXP", "Upgrades", "Boosts", "Session.Passes" }, function()
+	State.watch({ "LuckXP", "Rebirths", "Upgrades", "Boosts", "Session.Passes" }, function()
 		local xp = State.Data.LuckXP or 0
-		local level = Formula.luckLevel(xp)
+		local level = Formula.luckLevelOf(State.Data)
+		local capped = level >= Formula.luckCap(State.Data.Rebirths)
 		local current = Formula.luckXPForLevel(level)
 		local nextXP = Formula.luckXPForLevel(level + 1)
-		luckText.Text = "Lv " .. level .. "  ·  " .. Format.multiplier(Formula.luck(State.Data, State.Session))
-		setLuckBar((xp - current) / math.max(nextXP - current, 1))
+		luckText.Text = "Lv " .. level .. (if capped then " (cap)" else "") .. "  ·  " .. Format.multiplier(
+			Formula.luck(State.Data, State.Session)
+		)
+		setLuckBar(if capped then 1 else (xp - current) / math.max(nextXP - current, 1))
 	end)
 	State.watch({ "Coins", "Gems" }, function()
 		coins.Text = Format.number(State.Data.Coins)
