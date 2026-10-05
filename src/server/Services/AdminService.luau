@@ -333,7 +333,7 @@ COMMANDS.AddCode = function(profile, code, gems, coinBoost, luckBoost)
 	return true, name .. " added: " .. Rewards.describe(reward, profile.Data, profile.Session)
 end
 
-COMMANDS.RemoveCode = function(profile, code)
+COMMANDS.RemoveCode = function(_profile, code)
 	local name = LiveCodes.normalize(code)
 	if not name then
 		return false, "Enter a code."

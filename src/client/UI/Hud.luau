@@ -198,9 +198,11 @@ local function buildCurrencies(parent: Instance, openShop: (string) -> ())
 		local capped = level >= Formula.luckCap(State.Data.Rebirths)
 		local current = Formula.luckXPForLevel(level)
 		local nextXP = Formula.luckXPForLevel(level + 1)
-		luckText.Text = "Lv " .. level .. (if capped then " (cap)" else "") .. "  ·  " .. Format.multiplier(
-			Formula.luck(State.Data, State.Session)
-		)
+		luckText.Text = "Lv "
+			.. level
+			.. (if capped then " (cap)" else "")
+			.. "  ·  "
+			.. Format.multiplier(Formula.luck(State.Data, State.Session))
 		setLuckBar(if capped then 1 else (xp - current) / math.max(nextXP - current, 1))
 	end)
 	State.watch({ "Coins", "Gems" }, function()

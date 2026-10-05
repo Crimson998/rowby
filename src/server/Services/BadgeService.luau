@@ -50,8 +50,9 @@ function Badges.discovered(player: Player, petId: string, index: { [string]: boo
 	if pet and pet.Rarity == "Secret" then
 		award(player, Config.Badges.SecretPet)
 	end
-	for id in Pets do
-		if not index[id] then
+	-- Only hatchable pets count; exclusives like the paid Starter Pup must never be required.
+	for id, def in Pets do
+		if not def.Exclusive and not index[id] then
 			return
 		end
 	end

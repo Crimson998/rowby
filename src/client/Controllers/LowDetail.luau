@@ -14,6 +14,17 @@ local function apply(folder: Instance, hidden: boolean)
 	for _, descendant in folder:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.LocalTransparencyModifier = if hidden then 1 else 0
+			-- Hidden parts would otherwise be invisible walls. Collision is changed only on this
+			-- client (your own character), and the original setting is remembered to restore it.
+			local original = descendant:GetAttribute("DecorCollide")
+			if hidden then
+				if original == nil then
+					descendant:SetAttribute("DecorCollide", descendant.CanCollide)
+				end
+				descendant.CanCollide = false
+			elseif original ~= nil then
+				descendant.CanCollide = original == true
+			end
 		elseif descendant:IsA("ParticleEmitter") or descendant:IsA("Light") or descendant:IsA("Sparkles") then
 			(descendant :: any).Enabled = not hidden
 		end

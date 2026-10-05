@@ -34,12 +34,13 @@ end
 local function economy(player: Player, flow: any, currency: string, balance: number, amount: number, sku: string)
 	local service = AnalyticsService :: any
 	pcall(function()
+		-- Roblox's order is amount, then the balance after the transaction.
 		service:LogEconomyEvent(
 			player,
 			flow,
 			currency,
-			math.floor(balance),
 			math.floor(amount),
+			math.floor(balance),
 			Enum.AnalyticsEconomyTransactionType.Gameplay.Name,
 			sku
 		)

@@ -390,8 +390,11 @@ function World.orbCollected(position: Vector3, kind: string, amount: number)
 	})
 	local text = Util.label({
 		Size = UDim2.fromScale(1, 1),
-		Text = "+🍀 " .. Format.number(amount) .. (if lucky then " LUCKY!" else ""),
-		TextColor3 = color,
+		-- The server sends 0 once your Luck level is at its cap (rebirth raises it).
+		Text = if amount <= 0
+			then "🍀 Luck capped – rebirth!"
+			else "+🍀 " .. Format.number(amount) .. (if lucky then " LUCKY!" else ""),
+		TextColor3 = if amount <= 0 then Theme.Colors.SubText else color,
 		Parent = popup,
 	})
 	Util.tween(popup, 0.8, { StudsOffset = Vector3.new(0, 5, 0) })
