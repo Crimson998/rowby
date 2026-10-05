@@ -39,12 +39,22 @@
     "StarterPlayer": {
       "$properties": {
         "CharacterWalkSpeed": 16,
-        "CameraMaxZoomDistance": 60
+        "CameraMode": "Classic",
+        "CameraMinZoomDistance": 0.5,
+        "CameraMaxZoomDistance": 60,
+        "DevComputerCameraMovementMode": "UserChoice",
+        "DevTouchCameraMovementMode": "UserChoice",
+        "DevCameraOcclusionMode": "Zoom",
+        "EnableMouseLockOption": true
       },
       "StarterPlayerScripts": {
+        "$ignoreUnknownInstances": false,
         "Client": {
           "$path": "src/client"
         }
+      },
+      "StarterCharacterScripts": {
+        "$ignoreUnknownInstances": false
       }
     },
     "Players": {

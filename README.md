@@ -168,6 +168,13 @@ while you work. It's only included in builds once it's saved to a file.
 overwrites Studio script edits. Scripts inside your saved `.rbxm` models are fine (except in pet
 and egg models, which have scripts removed).
 
+**Player and camera settings come from the project.** `default.project.json` sets the camera
+(third person, zoom 0.5 to 60, shift lock allowed) and walk speed on StarterPlayer, and Rojo
+removes any script in `StarterPlayerScripts` or `StarterCharacterScripts` that isn't part of
+this project. So if another project's scripts end up in the place (for example a first-person
+camera), connecting Rojo puts things back. Leftovers elsewhere, such as `ReplicatedFirst`, still
+need deleting by hand.
+
 **Handing off to Claude (or a teammate):** commit and push in GitHub Desktop, then describe what
 you changed and what you want next. They pull first, so your work is kept, and you click
 **Pull origin** afterwards to get their changes; with `rojo serve` running, Studio updates live.
