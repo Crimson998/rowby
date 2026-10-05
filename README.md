@@ -125,8 +125,10 @@ luck = (1 + Luck level × 2% + Egg Luck upgrade × 10% + Lucky Eggs pass 25%) ×
 ```
 
 Reaching Luck level L takes `20 × L^1.6` Luck XP in total, so level 10 is about 800 clovers'
-worth and level 50 about 10,400 (max level 200). Clovers give 1 Luck XP in the Meadow up to 5 in
-the Cosmic Void. Luck is never reset by rebirth. Tune it in `Config.Luck`, `Config.Orbs` and each
+worth and level 50 about 10,400. Clovers give 1 Luck XP in the Meadow up to 5 in the Cosmic Void.
+Your Luck level is capped at 30, plus 15 for every rebirth with no upper limit; clovers give
+nothing at the cap, which is the signal to rebirth. Rebirth resets Luck XP to 0, so each run you
+climb again, higher than before. Tune it in `Config.Luck`, `Config.Orbs` and each
 area's `CloverValue`.
 
 ## Working in Studio alongside the code

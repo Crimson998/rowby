@@ -493,20 +493,24 @@ end)
 test("luck levels come from clover XP and stack with other luck", function()
 	eq(Formula.luckLevel(0), 0, "no XP")
 	local previous = 0
-	for level = 1, Config.Luck.MaxLevel do
+	for level = 1, 400 do
 		local needed = Formula.luckXPForLevel(level)
 		assert(needed > previous, "XP needed grows at level " .. level)
 		eq(Formula.luckLevel(needed), level, "exactly enough XP for level " .. level)
 		eq(Formula.luckLevel(needed - 1), level - 1, "one XP short of level " .. level)
 		previous = needed
 	end
-	eq(Formula.luckLevel(1e12), Config.Luck.MaxLevel, "level is capped")
+	assert(Formula.luckLevel(1e12) > 400, "clover XP levels have no maximum")
 
 	eq(Formula.luckCap(0), Config.Luck.StartCap, "cap before any rebirth")
 	eq(Formula.luckCap(1), Config.Luck.StartCap + Config.Luck.CapPerRebirth, "each rebirth raises the cap")
-	eq(Formula.luckCap(1e6), Config.Luck.MaxLevel, "cap never passes the max level")
+	eq(
+		Formula.luckCap(100),
+		Config.Luck.StartCap + 100 * Config.Luck.CapPerRebirth,
+		"the cap keeps rising with no maximum"
+	)
 	local capped = freshData()
-	capped.LuckXP = Formula.luckXPForLevel(Config.Luck.MaxLevel)
+	capped.LuckXP = Formula.luckXPForLevel(200)
 	eq(Formula.luckLevelOf(capped), Config.Luck.StartCap, "level held at the cap")
 	capped.Rebirths = 1
 	eq(Formula.luckLevelOf(capped), Config.Luck.StartCap + Config.Luck.CapPerRebirth, "rebirth lifts the cap")

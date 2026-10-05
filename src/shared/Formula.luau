@@ -180,16 +180,16 @@ function Formula.luckLevel(xp: number): number
 	while level > 0 and Formula.luckXPForLevel(level) > xp do
 		level -= 1
 	end
-	while level < Config.Luck.MaxLevel and Formula.luckXPForLevel(level + 1) <= xp do
+	while Formula.luckXPForLevel(level + 1) <= xp do
 		level += 1
 	end
-	return math.min(level, Config.Luck.MaxLevel)
+	return level
 end
 
--- The highest Luck level a player with this many rebirths can reach.
+-- The highest Luck level a player with this many rebirths can reach. It keeps rising with every
+-- rebirth; there is no overall maximum.
 function Formula.luckCap(rebirths: number?): number
-	local cap = Config.Luck.StartCap + math.max(rebirths or 0, 0) * Config.Luck.CapPerRebirth
-	return math.min(cap, Config.Luck.MaxLevel)
+	return Config.Luck.StartCap + math.max(rebirths or 0, 0) * Config.Luck.CapPerRebirth
 end
 
 -- A player's Luck level: their clover XP level, held down to the cap their rebirths allow.

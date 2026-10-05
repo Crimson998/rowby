@@ -145,10 +145,7 @@ function StatsWindow.build()
 		local xp = data.LuckXP or 0
 		local current = Formula.luckXPForLevel(luck.Level)
 		local nextXP = Formula.luckXPForLevel(luck.Level + 1)
-		if luck.Level >= Config.Luck.MaxLevel then
-			luckLevel.Text = "Luck Level " .. luck.Level .. " (MAX)"
-			setLuckBar(1, Format.number(xp) .. " Luck XP")
-		elseif luck.Level >= Formula.luckCap(data.Rebirths) then
+		if luck.Level >= Formula.luckCap(data.Rebirths) then
 			luckLevel.Text = "Luck Level " .. luck.Level .. " (cap)"
 			setLuckBar(1, "Rebirth to raise the cap to Lv " .. Formula.luckCap(data.Rebirths + 1))
 		else

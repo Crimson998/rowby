@@ -132,8 +132,10 @@ end
 
 -- Luck & boosts -------------------------------------------------------------------------------
 
+-- Levels above the player's cap would be held at the cap anyway, so the cap is the limit.
 COMMANDS.SetLuckLevel = function(profile, level)
-	local target = math.clamp(math.floor(tonumber(level) or 0), 0, Config.Luck.MaxLevel)
+	local cap = Formula.luckCap(profile.Data.Rebirths)
+	local target = math.clamp(math.floor(tonumber(level) or 0), 0, cap)
 	profile.Data.LuckXP = if target == 0 then 0 else Formula.luckXPForLevel(target)
 	DataService.change(profile, "LuckXP")
 	return true,

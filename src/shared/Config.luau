@@ -142,14 +142,14 @@ Config.Orbs = {
 }
 
 -- Luck level from clovers. Reaching level L takes BaseXP * L^Exponent Luck XP in total,
--- and every level adds PerLevel to your luck (0.02 = +2%). Luck is never lost on rebirth.
--- Your Luck level is capped at StartCap plus CapPerRebirth for each rebirth (never above
--- MaxLevel); clovers picked up at the cap give nothing, so hitting it is the signal to rebirth.
+-- and every level adds PerLevel to your luck (0.02 = +2%).
+-- Your Luck level is capped at StartCap plus CapPerRebirth for each rebirth, with no upper
+-- limit; clovers picked up at the cap give nothing, so hitting it is the signal to rebirth.
+-- Rebirth resets your Luck XP to 0, so each run you climb again, a little higher than before.
 Config.Luck = {
 	BaseXP = 20,
 	Exponent = 1.6,
 	PerLevel = 0.02,
-	MaxLevel = 200,
 	StartCap = 30,
 	CapPerRebirth = 15,
 }

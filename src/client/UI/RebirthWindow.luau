@@ -40,7 +40,7 @@ function RebirthWindow.build()
 	Util.label({
 		Size = UDim2.new(1, 0, 0, 44),
 		Position = UDim2.fromOffset(0, 176),
-		Text = "Resets your coins and Tap Power.\nKeeps pets, areas, gems, Luck and every other upgrade.\nEach rebirth raises your Luck level cap.",
+		Text = "Resets your coins, Tap Power and Luck level.\nKeeps pets, areas, gems and every other upgrade.\nEach rebirth raises your Luck level cap.",
 		TextColor3 = Theme.Colors.SubText,
 		Parent = body,
 	})
