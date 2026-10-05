@@ -18,7 +18,7 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 
 - **Launch setup** (S): real pass and product ids, item icons, game icon, thumbnails and description. Why: Robux items don't work in live servers until the ids are set.
 - **First-session tutorial** (M): short prompts to tap, hatch, equip, grab a clover and open Upgrades. Why: players decide whether to stay in the first few minutes.
-- **Music and ambience** (S, partly done): area music with crossfades and a Music on/off setting are shipped; still to add are ambient sounds per area and a volume slider. Why: the game has effects but little atmosphere.
+- **Music and ambience** (S, partly done): area music with crossfades, a Music on/off setting and a music volume control are shipped; still to add are ambient sounds per area. Why: the game has effects but little atmosphere.
 
 ### Next
 
@@ -42,10 +42,11 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 Noted to fix later; not features.
 
 - **Material not displaying properly**: the Golden tier's `PetGold` MaterialVariant doesn't show correctly on repainted custom pet models (see `CustomModels.paintPart`).
-- **README is out of date**: it doesn't describe index rewards, hatch pity, clover streaks, weekly quests or offline earnings.
 
 ## Shipped
 
+- **Music volume**: a ⚙️ Settings row with - / + buttons sets music volume in 10% steps (`Settings.MusicVolume`, 0 to 1, validated in `SettingsService`), scaling `Config.Music.Volume`.
+- **README brought up to date**: it now covers index rewards, hatch pity, clover streaks, weekly quests and offline earnings.
 - **Rebirth raises the luck cap**: Luck level is capped at 30 plus 15 per rebirth (up to level 200, `Config.Luck`); at the cap clovers give no XP, the 🍀 HUD shows "(cap)", and the 📊 Stats and 🔁 Rebirth windows show the next cap. Saves already above their cap keep their XP but play at the cap until they rebirth.
 - **Inspect players**: a 👥 Players window lists everyone in the server; tapping a name shows their equipped team (tier, level, rarity), rebirths, furthest area, eggs hatched and pet index progress (`SocialService` `InspectPlayer`, rate limited).
 - **Live codes**: codes kept in a DataStore (`LiveCodes`), refreshed every minute on every server and managed from the 🛠 admin panel (add or update with gems and 2x coin/luck boost minutes, remove, list); built-in `Config.Codes` still work and win on a name clash. Rewards are validated and clamped (`Rewards.sanitize`).

@@ -91,6 +91,8 @@ local TEMPLATE = {
 		AutoEquip = true,
 		Sounds = true,
 		Music = true,
+		-- 0 to 1, multiplies Config.Music.Volume.
+		MusicVolume = 1,
 		ShowOtherPets = true,
 		-- Hides map decorations and pet sparkles for smoother play on low-end devices.
 		LowDetail = false,

@@ -78,7 +78,11 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 | Goal tracker | Always shows the next target with a progress bar; a guide beam points to it once you can afford it |
 | Daily streak | A 7-day reward cycle that grows each day |
 | Playtime gifts | 8 gifts per session, then the round restarts |
-| Quests | 3 at a time for gems, scaled to your progress |
+| Quests | 3 daily quests for gems, scaled to your progress, plus 3 bigger weekly quests (6x the goal, 5x the gems) that refresh every 7 days; unclaimed finished quests are claimed for you on refresh |
+| Index rewards | Discovering every pet in an area's egg completes that area's Pet Index for a permanent +15% coin bonus, stacking per area |
+| Hatch pity | Each egg guarantees a Rare-or-better pet after 40 hatches without one; the odds board shows your progress |
+| Clover streaks | Grabbing clovers within 2.5 s of each other builds a streak that multiplies Luck XP by up to 2x |
+| Offline earnings | Coins for time away at 15% of your active rate, capped at 3 hours, collected from the 💤 Offline window |
 | Social | +10% coins per friend in the server (up to +50%), global leaderboards, codes |
 | Premium | Roblox Premium members get +10% coins (their playtime is what earns you Premium Payouts) |
 

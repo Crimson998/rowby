@@ -1,7 +1,7 @@
 --!strict
 --[[
 	Background music. Each area plays its track from Config.Music (or the Default), crossfading
-	when you walk into an area with a different track. The Music setting fades it in and out.
+	when you walk into an area with a different track. The Music setting fades it in and out and the Music volume setting scales it.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -65,7 +65,9 @@ local function refresh()
 		end
 	end
 	if target ~= "" then
-		fade(track(target), Config.Music.Volume)
+		local setting = State.Data.Settings and State.Data.Settings.MusicVolume
+		local scale = if type(setting) == "number" then math.clamp(setting, 0, 1) else 1
+		fade(track(target), Config.Music.Volume * scale)
 	end
 end
 

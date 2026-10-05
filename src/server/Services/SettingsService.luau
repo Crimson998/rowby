@@ -25,6 +25,9 @@ local VALIDATORS: { [string]: (any) -> boolean } = {
 	Music = function(value)
 		return type(value) == "boolean"
 	end,
+	MusicVolume = function(value)
+		return type(value) == "number" and value == value and value >= 0 and value <= 1
+	end,
 	ShowOtherPets = function(value)
 		return type(value) == "boolean"
 	end,

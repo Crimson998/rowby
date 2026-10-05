@@ -1,5 +1,5 @@
 --[[
-	⚙️ Settings: hatch animation, auto-equip, auto-delete by rarity, music, sounds and other players'
+	⚙️ Settings: hatch animation, auto-equip, auto-delete by rarity, music (with volume), sounds and other players'
 	pets and low-detail mode. Saved on the server with the rest of your data.
 ]]
 
@@ -136,6 +136,46 @@ function SettingsWindow.build()
 	end
 
 	toggle("Music", nil, "Music")
+
+	-- Music volume: - / + in 10% steps
+	do
+		local frame = row("Music volume")
+		local function step(delta: number)
+			local current = State.Data.Settings.MusicVolume or 1
+			local nextValue = math.clamp(math.floor(current * 10 + 0.5 + delta) / 10, 0, 1)
+			Actions("SetSetting", "MusicVolume", nextValue)
+		end
+		local plus = Util.button({
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -10, 0.5, 0),
+			Size = UDim2.fromOffset(44, 38),
+			Text = "+",
+			Parent = frame,
+		}, function()
+			step(1)
+		end)
+		local value = Util.label({
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -60, 0.5, 0),
+			Size = UDim2.fromOffset(64, 26),
+			Parent = frame,
+		})
+		local minus = Util.button({
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -130, 0.5, 0),
+			Size = UDim2.fromOffset(44, 38),
+			Text = "-",
+			Parent = frame,
+		}, function()
+			step(-1)
+		end)
+		table.insert(refreshers, function()
+			local volume = State.Data.Settings.MusicVolume or 1
+			value.Text = string.format("%d%%", math.floor(volume * 100 + 0.5))
+			plus.BackgroundColor3 = if volume < 1 then Theme.Colors.Green else Theme.Colors.Disabled
+			minus.BackgroundColor3 = if volume > 0 then Theme.Colors.Green else Theme.Colors.Disabled
+		end)
+	end
 	toggle("Sound effects", nil, "Sounds")
 	toggle("Show other players' pets", "Turn off if the game feels slow", "ShowOtherPets")
 	toggle("Low-detail mode", "Hides decorations and pet sparkles", "LowDetail")
