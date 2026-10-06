@@ -95,6 +95,7 @@ function StatsWindow.build()
 	local fromLevel = row("Luck Level (+" .. math.floor(Config.Luck.PerLevel * 100 + 0.5) .. "% each)")
 	local fromUpgrade = row("Egg Luck upgrade")
 	local fromPass = row("Lucky Eggs pass")
+	local fromSets = row("Pet set bonuses")
 	local fromBoost = row("2x Luck boost")
 	local totalLuck = row("Total luck", true)
 	local cloverValues = {}
@@ -118,6 +119,7 @@ function StatsWindow.build()
 	local petMultiplier = row("Equipped pets")
 	local rebirthMultiplier = row("Rebirths")
 	local areaIndexMultiplier = row("Area Index bonus")
+	local setMultiplier = row("Pet set bonuses")
 	local zoneMultiplier = row("Best area")
 	local masteryMultiplier = row("Coin Mastery")
 	local passMultiplier = row("Passes & Premium")
@@ -162,6 +164,7 @@ function StatsWindow.build()
 		fromLevel.Text = percent(luck.FromLevel)
 		fromUpgrade.Text = percent(luck.FromUpgrade)
 		fromPass.Text = if session.Passes.Lucky then percent(luck.FromPass) else "not owned"
+		fromSets.Text = if luck.FromSets > 0 then percent(luck.FromSets) else "none"
 		fromBoost.Text = if luck.BoostMultiplier > 1
 			then "x" .. luck.BoostMultiplier .. " (" .. Format.time(data.Boosts.Luck) .. ")"
 			else "inactive"
@@ -172,6 +175,7 @@ function StatsWindow.build()
 		petMultiplier.Text = Format.multiplier(1 + Formula.petBonus(data))
 		rebirthMultiplier.Text = Format.multiplier(Formula.rebirthMultiplier(data.Rebirths))
 		areaIndexMultiplier.Text = Format.multiplier(1 + Formula.areaIndexBonus(data))
+		setMultiplier.Text = Format.multiplier(1 + (Formula.setBonus(data)))
 		zoneMultiplier.Text = Format.multiplier(Formula.zoneMultiplier(data))
 		masteryMultiplier.Text = Format.multiplier(Formula.masteryMultiplier(Formula.level(data, "CoinMastery")))
 		passMultiplier.Text = Format.multiplier(Formula.passMultiplier(session))

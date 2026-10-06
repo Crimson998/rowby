@@ -293,12 +293,21 @@ local function rebuild()
 		end
 		local count = Formula.petCount(data)
 		local nearlyFull = count >= Config.Pets.Storage * 0.9
+		local setCoins, setLuck = Formula.setBonus(data)
+		local setText = ""
+		if setCoins > 0 or setLuck > 0 then
+			setText = string.format("  ·  Sets +%d%% coins", math.floor(setCoins * 100 + 0.5))
+			if setLuck > 0 then
+				setText ..= string.format(", +%d%% luck", math.floor(setLuck * 100 + 0.5))
+			end
+		end
 		info.Text = string.format(
-			"Equipped %d/%d  ·  Storage %d/%d%s",
+			"Equipped %d/%d  ·  Storage %d/%d%s%s",
 			equipped,
 			Formula.equipSlots(data, State.Session),
 			count,
 			Config.Pets.Storage,
+			setText,
 			if nearlyFull then "  ⚠️" else ""
 		)
 		info.TextColor3 = if nearlyFull then Theme.Colors.Orange else Theme.Colors.Text

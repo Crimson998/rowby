@@ -175,6 +175,21 @@ Config.Bonuses = {
 }
 
 --[[
+	Pet sets: each area's egg is a set made of its pets. Equipping different pets from one set
+	unlocks the best step reached (counted by distinct pet, not copies); steps do not stack within
+	a set, but bonuses from different sets add together.
+		Pieces  distinct pets from the set that must be equipped
+		Coins   added to the set bonus coin multiplier (0.1 = +10%)
+		Luck    added to your total luck (0.1 = +10%)
+]]
+Config.SetBonuses = {
+	{ Pieces = 2, Coins = 0.1 },
+	{ Pieces = 3, Coins = 0.25 },
+	{ Pieces = 4, Coins = 0.4, Luck = 0.1 },
+	{ Pieces = 5, Coins = 0.6, Luck = 0.25 },
+}
+
+--[[
 	Reward tables are shared by daily rewards, playtime gifts, quests and codes:
 		Gems              flat gems
 		CoinSeconds       coins equal to this many seconds of tapping at your current power

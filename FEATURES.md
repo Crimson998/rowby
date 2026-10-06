@@ -26,7 +26,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **Server events** (M): a giant chest the whole server taps open together, rewards by contribution. Why: brings players to one spot and to each other.
 - **More areas** (M each): areas 6 to 8 with new eggs, pets and themes after Cosmic Void. Why: late-game players run out of goals.
 - **Pet abilities** (M): some pets gain a perk, such as auto-collecting clovers, faster hatching or bonus gems. Why: pets matter beyond one power number.
-- **Pet set bonuses** (M): pets belong to sets (by area, family or element); equipping 2, 4 or a full set unlocks stacking bonuses, like Diablo item sets: more coins, more luck, then a unique perk. Why: rewards building a team instead of just equipping the strongest pets, and gives older pets a use.
 - **Rebirth shop** (M): rebirth tokens spent on permanent perks, such as storage or auto-collect. Why: deepens the long-term loop.
 
 ### Later
@@ -45,6 +44,7 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Pet set bonuses**: each area's egg is a set; equipping 2, 3, 4 or 5 different pets from it (copies count once) unlocks the best step in `Config.SetBonuses` (coins at every step, luck from 4 pieces), with different sets adding together (`Formula.setProgress`, `Formula.setBonus`). Shown in 📊 Stats (coin and luck rows) and the 🐾 Pets inventory line. Per-family or element sets and a unique perk at the top step are not done yet.
 - **Music volume**: a ⚙️ Settings row with - / + buttons sets music volume in 10% steps (`Settings.MusicVolume`, 0 to 1, validated in `SettingsService`), scaling `Config.Music.Volume`.
 - **README brought up to date**: it now covers index rewards, hatch pity, clover streaks, weekly quests and offline earnings.
 - **Rebirth raises the luck cap**: Luck level is capped at 30 plus 15 per rebirth with no upper limit (`Config.Luck`); at the cap clovers give no XP, the 🍀 HUD shows "(cap)", and the 📊 Stats and 🔁 Rebirth windows show the next cap. Rebirth resets Luck XP to 0, so each run climbs again to a higher cap. Saves already above their cap keep their XP but play at the cap until they rebirth.

@@ -92,6 +92,46 @@ function Formula.areaIndexBonus(data): number
 	return completed * Config.Bonuses.AreaIndexCoinBonus
 end
 
+-- Distinct pets equipped from one egg's set, and the best SetBonuses step that earns (nil if none).
+function Formula.setProgress(data, eggId: string): (number, { Pieces: number, Coins: number?, Luck: number? }?)
+	local egg = Eggs.ById[eggId]
+	if not egg then
+		return 0, nil
+	end
+	local inSet = {}
+	for _, entry in egg.Pets do
+		inSet[entry.Id] = true
+	end
+	local equipped = {}
+	local pieces = 0
+	for _, pet in data.Pets do
+		if pet.Equipped and inSet[pet.Id] and not equipped[pet.Id] then
+			equipped[pet.Id] = true
+			pieces += 1
+		end
+	end
+	local best = nil
+	for _, step in Config.SetBonuses do
+		if pieces >= step.Pieces then
+			best = step
+		end
+	end
+	return pieces, best
+end
+
+-- Total coin and luck bonuses from every set's best step (see Config.SetBonuses).
+function Formula.setBonus(data): (number, number)
+	local coins, luck = 0, 0
+	for _, egg in Eggs.List do
+		local _, step = Formula.setProgress(data, egg.Id)
+		if step then
+			coins += step.Coins or 0
+			luck += step.Luck or 0
+		end
+	end
+	return coins, luck
+end
+
 function Formula.masteryMultiplier(level: number): number
 	return 1 + level * 0.1
 end
@@ -128,6 +168,7 @@ end
 function Formula.coinMultiplier(data, session, includeTemporary: boolean): number
 	local multiplier = (1 + Formula.petBonus(data))
 		* (1 + Formula.areaIndexBonus(data))
+		* (1 + (Formula.setBonus(data)))
 		* Formula.rebirthMultiplier(data.Rebirths)
 		* Formula.zoneMultiplier(data)
 		* Formula.masteryMultiplier(Formula.level(data, "CoinMastery"))
@@ -226,6 +267,7 @@ export type LuckBreakdown = {
 	FromLevel: number,
 	FromUpgrade: number,
 	FromPass: number,
+	FromSets: number,
 	BoostMultiplier: number,
 	Total: number,
 }
@@ -236,14 +278,16 @@ function Formula.luckBreakdown(data, session): LuckBreakdown
 	local fromLevel = level * Config.Luck.PerLevel
 	local fromUpgrade = Formula.level(data, "Luck") * 0.1
 	local fromPass = if session.Passes.Lucky then Config.Bonuses.LuckyPassLuck else 0
+	local _, fromSets = Formula.setBonus(data)
 	local boost = if (data.Boosts.Luck or 0) > 0 then Config.Bonuses.LuckBoostMultiplier else 1
 	return {
 		Level = level,
 		FromLevel = fromLevel,
 		FromUpgrade = fromUpgrade,
 		FromPass = fromPass,
+		FromSets = fromSets,
 		BoostMultiplier = boost,
-		Total = (1 + fromLevel + fromUpgrade + fromPass) * boost,
+		Total = (1 + fromLevel + fromUpgrade + fromPass + fromSets) * boost,
 	}
 end
 

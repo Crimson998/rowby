@@ -257,6 +257,53 @@ end)
 
 -- Odds ---------------------------------------------------------------------------------------
 
+test("pet set bonuses count distinct pets per area and add across areas", function()
+	local data = freshData()
+	local pieces, step = Formula.setProgress(data, "Meadow")
+	eq(pieces, 0, "nothing equipped")
+	eq(step, nil, "no step yet")
+	data.Pets = {
+		a = { Id = "Doggy", Tier = 1, Level = 1, Equipped = true },
+		b = { Id = "Doggy", Tier = 2, Level = 1, Equipped = true },
+		c = { Id = "Kitty", Tier = 1, Level = 1, Equipped = false },
+	}
+	pieces, step = Formula.setProgress(data, "Meadow")
+	eq(pieces, 1, "copies of one pet count once, unequipped pets not at all")
+	eq(step, nil, "one piece is no bonus")
+	data.Pets.c.Equipped = true
+	local coins = Formula.setBonus(data)
+	near(coins, Config.SetBonuses[1].Coins, 1e-9, "two pieces unlock the first step")
+	near(
+		Formula.coinMultiplier(data, freshSession(), false) / Formula.coinMultiplier(freshData(), freshSession(), false),
+		(1 + Formula.petBonus(data)) * (1 + coins),
+		1e-9,
+		"set bonus multiplies coins"
+	)
+	local candy = Eggs.ById.Candy.Pets
+	data.Pets.d = { Id = candy[1].Id, Tier = 1, Level = 1, Equipped = true }
+	data.Pets.e = { Id = candy[2].Id, Tier = 1, Level = 1, Equipped = true }
+	near(Formula.setBonus(data), coins + Config.SetBonuses[1].Coins, 1e-9, "different areas add together")
+end)
+
+test("set bonus steps only grow and luck feeds the total", function()
+	local previous = 0
+	for _, step in Config.SetBonuses do
+		assert(step.Pieces > previous, "pieces must increase")
+		previous = step.Pieces
+	end
+	for _, egg in Eggs.List do
+		assert(#egg.Pets >= previous, egg.Id .. " has too few pets for the top set step")
+	end
+	local data = freshData()
+	local fullEgg = Eggs.List[1]
+	for index, entry in fullEgg.Pets do
+		data.Pets["p" .. index] = { Id = entry.Id, Tier = 1, Level = 1, Equipped = true }
+	end
+	local _, luckBonus = Formula.setBonus(data)
+	assert(luckBonus > 0, "a full set grants luck")
+	near(Formula.luckBreakdown(data, freshSession()).FromSets, luckBonus, 1e-9, "luck breakdown")
+end)
+
 test("odds always sum to 100% and luck only helps rare pets", function()
 	for _, egg in Eggs.List do
 		local base = Formula.eggOdds(egg.Id, 1)
@@ -405,7 +452,7 @@ test("multipliers stack as documented", function()
 		p3 = { Id = "Bunny", Tier = 1, Equipped = false }, -- not equipped
 	}
 	local session = freshSession()
-	local expected = 5 * (1 + 0.2 + 1.05) * 2 * 1.5
+	local expected = 5 * (1 + 0.2 + 1.05) * (1 + Config.SetBonuses[1].Coins) * 2 * 1.5 -- Doggy + Kitty: 2-piece Meadow set
 	near(Formula.tapValue(data, session), expected, 1e-9, "no passes")
 
 	session.Passes.DoubleCoins = true
