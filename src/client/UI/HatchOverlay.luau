@@ -1,6 +1,7 @@
 --[[
 	Full-screen egg hatch: the egg wobbles harder and harder, flashes, then reveals the pet with
-	its rarity, tier and level. Click to skip. A new hatch while one is playing replaces it immediately.
+	its rarity, tier and level, with effects that grow with how good the pull is (HatchEffects).
+	Click to skip. A new hatch while one is playing replaces it immediately.
 	Settings.HatchAnimation picks "Full", "Fast" (no wobble, short reveal) or "Off" (a toast).
 ]]
 
@@ -17,6 +18,7 @@ local Pets = require(Shared.Pets)
 local PetModels = require(script.Parent.Parent.PetModels)
 local Sound = require(script.Parent.Parent.Sound)
 local State = require(script.Parent.Parent.State)
+local HatchEffects = require(script.Parent.HatchEffects)
 local Notifications = require(script.Parent.Notifications)
 local Viewport = require(script.Parent.Parent.Viewport)
 local Theme = require(script.Parent.Theme)
@@ -27,6 +29,11 @@ local HatchOverlay = {}
 local SHAKE_TIME = 1.2
 local HOLD_TIME = 2.2
 local FAST_HOLD_TIME = 0.9
+-- Pulls at least this exciting (see HatchEffects) get a coloured flash; BIG ones also shake
+-- the screen and stay up a little longer.
+local COLOR_FLASH = 5
+local BIG = 7
+local BIG_EXTRA_HOLD = 0.8
 
 type Result = { Id: string, Tier: number, Level: number, Uid: string?, New: boolean, Deleted: boolean? }
 
@@ -134,7 +141,21 @@ function HatchOverlay.play(eggId: string, results: { Result })
 			BackgroundTransparency = 1,
 			Parent = container,
 		})
-		local viewport = Viewport.new({ Size = UDim2.fromOffset(250, 250), Parent = slot })
+		-- Effects sit in two layers around the viewport: glows and rays behind, flying pieces in front.
+		local back = Util.new("Frame", {
+			Size = UDim2.fromOffset(250, 250),
+			BackgroundTransparency = 1,
+			ZIndex = 0,
+			Parent = slot,
+		})
+		local front = Util.new("Frame", {
+			Size = UDim2.fromOffset(250, 250),
+			BackgroundTransparency = 1,
+			ZIndex = 2,
+			Parent = slot,
+		})
+		local viewport = Viewport.new({ Size = UDim2.fromOffset(250, 250), ZIndex = 1, Parent = slot })
+		local pop = Util.new("UIScale", { Parent = viewport })
 		Viewport.show(viewport, PetModels.egg(eggId), 6.5)
 		local name =
 			Util.label({ Size = UDim2.new(1, 0, 0, 38), Position = UDim2.fromOffset(0, 252), Text = "", Parent = slot })
@@ -151,7 +172,17 @@ function HatchOverlay.play(eggId: string, results: { Result })
 			Parent = slot,
 		})
 		Util.corner(10).Parent = badge
-		slots[index] = { Viewport = viewport, Name = name, Rarity = rarity, Badge = badge, Result = result }
+		slots[index] = {
+			Viewport = viewport,
+			Pop = pop,
+			Back = back,
+			Front = front,
+			Name = name,
+			Rarity = rarity,
+			Badge = badge,
+			Result = result,
+			Effect = nil :: HatchEffects.Effect?,
+		}
 	end
 
 	Sound.play("Hatch", 1, 0.6)
@@ -176,9 +207,8 @@ function HatchOverlay.play(eggId: string, results: { Result })
 	end
 
 	-- Reveal
-	flash.BackgroundTransparency = 0.05
-	Util.tween(flash, 0.45, { BackgroundTransparency = 1 })
 	local best = 0
+	local bestColor = Color3.new(1, 1, 1)
 	for _, slot in slots do
 		local pet = Pets[slot.Result.Id]
 		local rarity = Config.Rarities[pet.Rarity]
@@ -199,20 +229,56 @@ function HatchOverlay.play(eggId: string, results: { Result })
 			slot.Viewport.ImageTransparency = 0.6
 		end
 		slot.Badge.Visible = slot.Result.New
+		if not result.Deleted then
+			local effect = HatchEffects.create(slot.Back, slot.Front, result)
+			slot.Effect = effect
+			if effect.Excitement > best then
+				bestColor = effect.Color
+			end
+			-- The pet pops in, bigger and bouncier for better pulls.
+			slot.Pop.Scale = if effect.Excitement >= BIG then 0.3 else 0.6
+			Util.tween(slot.Pop, if effect.Excitement >= BIG then 0.55 else 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+		end
 		best = math.max(best, excitement(result))
 	end
+	-- White flash for ordinary pulls; great pulls flash in their own colour.
+	flash.BackgroundColor3 = if best >= COLOR_FLASH then bestColor else Color3.new(1, 1, 1)
+	flash.BackgroundTransparency = if best >= BIG then 0 else 0.05
+	Util.tween(flash, if best >= BIG then 0.8 else 0.45, { BackgroundTransparency = 1 })
 	Sound.play("Reveal", if best >= 4 then 1 else 1.25, if best >= 4 then 0.8 else 0.5)
+	if best >= BIG then
+		Sound.play("Reveal", 0.8, 0.6)
+		-- A short screen shake.
+		task.spawn(function()
+			local shakeStart = os.clock()
+			while os.clock() - shakeStart < 0.4 and token == myToken do
+				local strength = 10 * (1 - (os.clock() - shakeStart) / 0.4)
+				container.Position = UDim2.new(
+					0.5,
+					math.random(-100, 100) / 100 * strength,
+					0.5,
+					math.random(-100, 100) / 100 * strength
+				)
+				RunService.RenderStepped:Wait()
+			end
+			container.Position = UDim2.fromScale(0.5, 0.5)
+		end)
+	end
 
 	skip = false
 	local revealStart = os.clock()
-	local hold = if mode == "Fast" then FAST_HOLD_TIME else HOLD_TIME
+	local hold = (if mode == "Fast" then FAST_HOLD_TIME else HOLD_TIME) + (if best >= BIG then BIG_EXTRA_HOLD else 0)
 	while os.clock() - revealStart < hold do
 		if skip or token ~= myToken then
 			break
 		end
-		local angle = (os.clock() - revealStart) * 1.6
+		local elapsed = os.clock() - revealStart
+		local angle = elapsed * 1.6
 		for _, slot in slots do
 			Viewport.spin(slot.Viewport, math.sin(angle) * 0.6)
+			if slot.Effect then
+				slot.Effect.Update(elapsed)
+			end
 		end
 		RunService.RenderStepped:Wait()
 	end
