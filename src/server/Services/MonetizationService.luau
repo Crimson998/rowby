@@ -64,7 +64,7 @@ function MonetizationService.setPass(profile, key: string, owned: boolean)
 end
 
 local function grantProduct(profile, product: Products.DevProduct)
-	DataService.grantReward(profile, product.Reward)
+	DataService.grantReward(profile, product.Reward, "Product_" .. product.Key, "IAP")
 	if product.Reward.Pet then
 		PetService.givePet(profile, product.Reward.Pet, 1)
 		PetService.equipBest(profile)

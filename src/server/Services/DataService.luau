@@ -377,12 +377,26 @@ function DataService.addCoins(profile: Profile, amount: number, earned: boolean)
 	DataService.change(profile, "Coins")
 end
 
-function DataService.addGems(profile: Profile, amount: number)
+local gemHandlers: { (Profile, number, string, string) -> () } = {}
+
+-- Runs `handler(profile, amount, source, transactionType)` whenever gems are granted, so
+-- analytics can log every gem source without each caller doing it.
+function DataService.onGems(handler: (Profile, number, string, string) -> ())
+	table.insert(gemHandlers, handler)
+end
+
+-- `source` names where the gems came from ("Quest", "Rebirth", …). `transactionType` is a
+-- Roblox AnalyticsEconomyTransactionType name: "Gameplay" (default), "TimedReward" or "IAP".
+function DataService.addGems(profile: Profile, amount: number, source: string?, transactionType: string?)
 	if amount <= 0 then
 		return
 	end
-	profile.Data.Gems = math.min(profile.Data.Gems + math.floor(amount), DataService.MAX_NUMBER)
+	local granted = math.floor(amount)
+	profile.Data.Gems = math.min(profile.Data.Gems + granted, DataService.MAX_NUMBER)
 	DataService.change(profile, "Gems")
+	for _, handler in gemHandlers do
+		task.spawn(handler, profile, granted, source or "Other", transactionType or "Gameplay")
+	end
 end
 
 function DataService.addBoost(profile: Profile, kind: string, seconds: number)
@@ -391,10 +405,11 @@ function DataService.addBoost(profile: Profile, kind: string, seconds: number)
 	DataService.change(profile, "Boosts")
 end
 
--- Grants a reward table (see Config.Daily). Pets are granted by PetService.
-function DataService.grantReward(profile: Profile, reward)
+-- Grants a reward table (see Config.Daily). Pets are granted by PetService. `source` and
+-- `transactionType` label any gems for analytics (see addGems).
+function DataService.grantReward(profile: Profile, reward, source: string?, transactionType: string?)
 	if reward.Gems then
-		DataService.addGems(profile, reward.Gems)
+		DataService.addGems(profile, reward.Gems, source, transactionType)
 	end
 	if reward.CoinSeconds then
 		DataService.addCoins(profile, Formula.rewardCoins(profile.Data, profile.Session, reward.CoinSeconds), false)

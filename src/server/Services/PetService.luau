@@ -107,7 +107,7 @@ function PetService.givePet(profile, petId: string, tier: number?, level: number
 		data.Index[petId] = true
 		discovered = true
 		local rarity = Config.Rarities[Pets[petId].Rarity]
-		DataService.addGems(profile, rarity.DiscoveryGems)
+		DataService.addGems(profile, rarity.DiscoveryGems, "PetDiscovery")
 		DataService.change(profile, "Index")
 		BadgeService.discovered(profile.Player, petId, data.Index)
 

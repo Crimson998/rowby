@@ -31,7 +31,15 @@ function Analytics.funnel(player: Player, step: string)
 	end)
 end
 
-local function economy(player: Player, flow: any, currency: string, balance: number, amount: number, sku: string)
+local function economy(
+	player: Player,
+	flow: any,
+	currency: string,
+	balance: number,
+	amount: number,
+	sku: string,
+	transactionType: string?
+)
 	local service = AnalyticsService :: any
 	pcall(function()
 		-- Roblox's order is amount, then the balance after the transaction.
@@ -41,7 +49,7 @@ local function economy(player: Player, flow: any, currency: string, balance: num
 			currency,
 			math.floor(amount),
 			math.floor(balance),
-			Enum.AnalyticsEconomyTransactionType.Gameplay.Name,
+			transactionType or Enum.AnalyticsEconomyTransactionType.Gameplay.Name,
 			sku
 		)
 	end)
@@ -54,10 +62,18 @@ function Analytics.sink(player: Player, currency: string, balance: number, amoun
 	end
 end
 
--- Gems (or other currency) earned; balance is the new total.
-function Analytics.source(player: Player, currency: string, balance: number, amount: number, sku: string)
+-- Gems (or other currency) earned; balance is the new total. transactionType is a Roblox
+-- AnalyticsEconomyTransactionType name ("Gameplay" if left out, "TimedReward", "IAP").
+function Analytics.source(
+	player: Player,
+	currency: string,
+	balance: number,
+	amount: number,
+	sku: string,
+	transactionType: string?
+)
 	if amount > 0 then
-		economy(player, Enum.AnalyticsEconomyFlowType.Source, currency, balance, amount, sku)
+		economy(player, Enum.AnalyticsEconomyFlowType.Source, currency, balance, amount, sku, transactionType)
 	end
 end
 
@@ -68,6 +84,10 @@ function Analytics.Init()
 	end)
 	DataService.onRelease(function(profile)
 		sessions[profile.Player] = nil
+	end)
+	-- Every gem grant, whatever its source, goes through DataService.addGems.
+	DataService.onGems(function(profile, amount, source, transactionType)
+		Analytics.source(profile.Player, "Gems", profile.Data.Gems, amount, source, transactionType)
 	end)
 end
 

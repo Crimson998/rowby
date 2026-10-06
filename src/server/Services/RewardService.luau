@@ -58,7 +58,7 @@ local function claimQuest(profile, slot)
 	if not quest or Quests.progress(data, quest) < quest.Goal then
 		return
 	end
-	DataService.addGems(profile, quest.Gems)
+	DataService.addGems(profile, quest.Gems, "Quest")
 	data.QuestsCompleted += 1
 	local used = {}
 	for index, other in data.Quests do
@@ -105,7 +105,7 @@ local function fillWeekly(profile)
 		end
 	end
 	if autoGems > 0 then
-		DataService.addGems(profile, autoGems)
+		DataService.addGems(profile, autoGems, "WeeklyQuest")
 		DataService.notify(profile.Player, "📅 Unclaimed weekly quests paid out: 💎 " .. autoGems, "Reward")
 	end
 	local used = {}
@@ -127,7 +127,7 @@ local function claimWeekly(profile, slot)
 		return
 	end
 	quest.Claimed = true
-	DataService.addGems(profile, quest.Gems)
+	DataService.addGems(profile, quest.Gems, "WeeklyQuest")
 	DataService.change(profile, "Weekly")
 	DataService.notify(profile.Player, "📅 Weekly quest complete! 💎 " .. quest.Gems, "Reward")
 end
@@ -142,7 +142,7 @@ local function claimDaily(profile)
 	local reward = Config.Daily.Rewards[day]
 	data.Daily.Last = now
 	data.Daily.Streak = streak + 1
-	DataService.grantReward(profile, reward)
+	DataService.grantReward(profile, reward, "DailyReward", "TimedReward")
 	DataService.change(profile, "Daily")
 	DataService.notify(
 		profile.Player,
@@ -162,7 +162,7 @@ local function claimGift(profile, index)
 		return
 	end
 	session.GiftsClaimed[index] = true
-	DataService.grantReward(profile, gift.Reward)
+	DataService.grantReward(profile, gift.Reward, "Gift", "TimedReward")
 	DataService.notify(
 		profile.Player,
 		"🎁 Gift opened!  " .. Rewards.describe(gift.Reward, profile.Data, session),
@@ -203,7 +203,7 @@ local function redeemCode(player: Player, code): (boolean, string)
 		return false, "You already redeemed this code."
 	end
 	data.Codes[normalized] = true
-	DataService.grantReward(profile, reward)
+	DataService.grantReward(profile, reward, "Code")
 	DataService.change(profile, "Codes")
 	return true, "Redeemed!  " .. Rewards.describe(reward, data, profile.Session)
 end

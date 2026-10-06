@@ -118,9 +118,8 @@ local function rebirth(profile)
 	-- Luck XP starts over too; the new, higher cap lets this run climb further than the last.
 	data.LuckXP = 0
 	data.Rebirths += 1
-	DataService.addGems(profile, gems)
+	DataService.addGems(profile, gems, "Rebirth")
 	AnalyticsService.sink(profile.Player, "Coins", 0, cost, "Rebirth")
-	AnalyticsService.source(profile.Player, "Gems", data.Gems, gems, "Rebirth")
 	AnalyticsService.funnel(profile.Player, "FirstRebirth")
 	BadgeService.firstRebirth(profile.Player)
 	DataService.change(profile, "Coins", "Upgrades", "Rebirths", "LuckXP")
