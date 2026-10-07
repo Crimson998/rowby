@@ -305,6 +305,115 @@ test("set bonus steps only grow and luck feeds the total", function()
 	near(Formula.luckBreakdown(data, freshSession()).FromSets, luckBonus, 1e-9, "luck breakdown")
 end)
 
+-- The strongest `slots` pets by power alone: what Equip Best did before it knew about sets.
+local function strongestTeam(data, slots: number): { string }
+	local uids = {}
+	for uid in data.Pets do
+		table.insert(uids, uid)
+	end
+	table.sort(uids, function(a, b)
+		local petA, petB = data.Pets[a], data.Pets[b]
+		local powerA = Formula.petPower(petA.Id, petA.Tier, petA.Level)
+		local powerB = Formula.petPower(petB.Id, petB.Tier, petB.Level)
+		if powerA == powerB then
+			return a < b
+		end
+		return powerA > powerB
+	end)
+	local team = {}
+	for index = 1, math.min(slots, #uids) do
+		team[index] = uids[index]
+	end
+	return team
+end
+
+test("team score counts pet power and each set once per different pet", function()
+	local data = freshData()
+	data.Pets = {
+		a = { Id = "Doggy", Tier = 1, Level = 1 },
+		b = { Id = "Doggy", Tier = 1, Level = 1 },
+		c = { Id = "Kitty", Tier = 1, Level = 1 },
+	}
+	local copies = Formula.teamScore(data, { "a", "b" })
+	near(copies.Coins, 1 + 2 * Pets.Doggy.Power, 1e-9, "two copies are one piece: no set bonus")
+	local pair = Formula.teamScore(data, { "a", "c" })
+	near(
+		pair.Coins,
+		(1 + Pets.Doggy.Power + Pets.Kitty.Power) * (1 + Config.SetBonuses[1].Coins),
+		1e-9,
+		"two different pets unlock the first step"
+	)
+end)
+
+test("Equip Best picks a set over raw power when the set earns more", function()
+	local data = freshData()
+	data.Pets = {
+		dragon = { Id = "CandyDragon", Tier = 1, Level = 1 },
+		dog1 = { Id = "DonutDog", Tier = 1, Level = 1 },
+		dog2 = { Id = "DonutDog", Tier = 1, Level = 1 },
+		dog3 = { Id = "DonutDog", Tier = 1, Level = 1 },
+		fox = { Id = "LollipopFox", Tier = 1, Level = 1 },
+	}
+	local team = Formula.bestTeam(data, 3)
+	eq(#team, 3, "fills every slot")
+	local chosen = {}
+	for _, uid in team do
+		chosen[uid] = true
+	end
+	assert(chosen.dragon and chosen.fox, "the dragon, a donut dog and the fox make a 3-piece set")
+	assert(
+		Formula.teamScore(data, team).Coins > Formula.teamScore(data, strongestTeam(data, 3)).Coins,
+		"the set team earns more than the strongest pets"
+	)
+	eq(#Formula.bestTeam(data, 0), 0, "no slots, no team")
+	eq(#Formula.bestTeam(data, 10), 5, "more slots than pets equips them all")
+end)
+
+test("Equip Best always finds the top-earning team (checked against every possible team)", function()
+	local rng = Random.new(2026)
+	local pool = {}
+	for _, egg in { Eggs.ById.Meadow, Eggs.ById.Candy } do
+		for _, entry in egg.Pets do
+			table.insert(pool, entry.Id)
+		end
+	end
+	for trial = 1, 150 do
+		local data = freshData()
+		local uids = {}
+		for index = 1, rng:NextInteger(3, 9) do
+			local uid = "p" .. index
+			data.Pets[uid] = {
+				Id = pool[rng:NextInteger(1, #pool)],
+				Tier = rng:NextInteger(1, 3),
+				Level = rng:NextInteger(1, 10),
+			}
+			table.insert(uids, uid)
+		end
+		local slots = rng:NextInteger(1, 5)
+		local size = math.min(slots, #uids)
+
+		-- Brute force: try every team of `size` pets.
+		local best = 0
+		local picked = {}
+		local function try(start: number)
+			if #picked == size then
+				best = math.max(best, Formula.teamScore(data, picked).Coins)
+				return
+			end
+			for index = start, #uids do
+				table.insert(picked, uids[index])
+				try(index + 1)
+				table.remove(picked)
+			end
+		end
+		try(1)
+
+		local team = Formula.bestTeam(data, slots)
+		eq(#team, size, "trial " .. trial .. " team size")
+		near(Formula.teamScore(data, team).Coins, best, 1e-6 * best, "trial " .. trial .. " is optimal")
+	end
+end)
+
 test("odds always sum to 100% and luck only helps rare pets", function()
 	for _, egg in Eggs.List do
 		local base = Formula.eggOdds(egg.Id, 1)

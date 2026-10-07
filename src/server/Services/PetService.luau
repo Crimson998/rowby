@@ -64,21 +64,15 @@ local function isPrecious(pet): boolean
 	return Config.Rarities[Pets[pet.Id].Rarity].Announce == true
 end
 
+-- Equips the team that earns the most coins, set bonuses included (see Formula.bestTeam).
 function PetService.equipBest(profile)
 	local data = profile.Data
-	local slots = Formula.equipSlots(data, profile.Session)
-	local ranked = {}
-	for uid, pet in data.Pets do
-		table.insert(ranked, { Uid = uid, Power = Formula.petPower(pet.Id, pet.Tier, pet.Level) })
+	local chosen: { [string]: boolean } = {}
+	for _, uid in Formula.bestTeam(data, Formula.equipSlots(data, profile.Session)) do
+		chosen[uid] = true
 	end
-	table.sort(ranked, function(a, b)
-		if a.Power == b.Power then
-			return a.Uid < b.Uid
-		end
-		return a.Power > b.Power
-	end)
-	for rank, entry in ranked do
-		data.Pets[entry.Uid].Equipped = rank <= slots
+	for uid, pet in data.Pets do
+		pet.Equipped = chosen[uid] == true
 	end
 	DataService.change(profile, "Pets")
 	refreshAttribute(profile)

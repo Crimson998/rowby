@@ -93,8 +93,21 @@ function Formula.areaIndexBonus(data): number
 	return completed * Config.Bonuses.AreaIndexCoinBonus
 end
 
+export type SetStep = { Pieces: number, Coins: number?, Luck: number? }
+
+-- The best Config.SetBonuses step reached with this many distinct pets from one set (nil if none).
+function Formula.setStep(pieces: number): SetStep?
+	local best = nil
+	for _, step in Config.SetBonuses do
+		if pieces >= step.Pieces then
+			best = step
+		end
+	end
+	return best
+end
+
 -- Distinct pets equipped from one egg's set, and the best SetBonuses step that earns (nil if none).
-function Formula.setProgress(data, eggId: string): (number, { Pieces: number, Coins: number?, Luck: number? }?)
+function Formula.setProgress(data, eggId: string): (number, SetStep?)
 	local egg = Eggs.ById[eggId]
 	if not egg then
 		return 0, nil
@@ -111,13 +124,7 @@ function Formula.setProgress(data, eggId: string): (number, { Pieces: number, Co
 			pieces += 1
 		end
 	end
-	local best = nil
-	for _, step in Config.SetBonuses do
-		if pieces >= step.Pieces then
-			best = step
-		end
-	end
-	return pieces, best
+	return pieces, Formula.setStep(pieces)
 end
 
 -- Total coin and luck bonuses from every set's best step (see Config.SetBonuses).
@@ -131,6 +138,150 @@ function Formula.setBonus(data): (number, number)
 		end
 	end
 	return coins, luck
+end
+
+export type TeamScore = {
+	-- The team's coin multiplier from pets and sets: (1 + total pet power) × (1 + set coins).
+	Coins: number,
+	-- Luck added by the team's sets.
+	Luck: number,
+	Power: number,
+}
+
+-- What a team of pets (uids from data.Pets) earns: pet power plus the set bonuses it unlocks.
+function Formula.teamScore(data, uids: { string }): TeamScore
+	local power = 0
+	local seen: { [string]: boolean } = {}
+	local pieces: { [string]: number } = {}
+	for _, uid in uids do
+		local pet = data.Pets[uid]
+		power += Formula.petPower(pet.Id, pet.Tier, pet.Level)
+		local egg = Eggs.ByPet[pet.Id]
+		if egg and not seen[pet.Id] then
+			seen[pet.Id] = true
+			pieces[egg.Id] = (pieces[egg.Id] or 0) + 1
+		end
+	end
+	local setCoins, setLuck = 0, 0
+	for _, count in pieces do
+		local step = Formula.setStep(count)
+		if step then
+			setCoins += step.Coins or 0
+			setLuck += step.Luck or 0
+		end
+	end
+	return { Coins = (1 + power) * (1 + setCoins), Luck = setLuck, Power = power }
+end
+
+local function betterTeam(a: TeamScore, b: TeamScore): boolean
+	if math.abs(a.Coins - b.Coins) > 1e-9 * math.max(1, b.Coins) then
+		return a.Coins > b.Coins
+	end
+	if a.Luck ~= b.Luck then
+		return a.Luck > b.Luck
+	end
+	return a.Power > b.Power
+end
+
+--[[
+	The team Equip Best picks: the `slots` pets that earn the most coins, counting set bonuses
+	(ties go to more luck, then more power). It compares the strongest pets on their own with
+	every way of meeting set steps (2, 3, 4 or 5 different pets from each area's set, using the
+	strongest copy of each), filling the remaining slots with the strongest pets left. Returns
+	pet uids.
+]]
+function Formula.bestTeam(data, slots: number): { string }
+	type Entry = { Uid: string, Id: string, Power: number }
+	local ranked: { Entry } = {}
+	for uid, pet in data.Pets do
+		table.insert(ranked, { Uid = uid, Id = pet.Id, Power = Formula.petPower(pet.Id, pet.Tier, pet.Level) })
+	end
+	table.sort(ranked, function(a, b)
+		if a.Power == b.Power then
+			return a.Uid < b.Uid
+		end
+		return a.Power > b.Power
+	end)
+
+	-- Each set's different pets, as the uid of their strongest copy, strongest first.
+	local bySet: { [string]: { string } } = {}
+	local counted: { [string]: boolean } = {}
+	for _, entry in ranked do
+		local egg = Eggs.ByPet[entry.Id]
+		if egg and not counted[entry.Id] then
+			counted[entry.Id] = true
+			bySet[egg.Id] = bySet[egg.Id] or {}
+			table.insert(bySet[egg.Id], entry.Uid)
+		end
+	end
+
+	-- For each set the player can build, the piece counts worth trying (0 = don't force it).
+	local setIds: { string } = {}
+	local choices: { [string]: { number } } = {}
+	for eggId, species in bySet do
+		local options = { 0 }
+		for _, step in Config.SetBonuses do
+			if step.Pieces <= #species and step.Pieces <= slots then
+				table.insert(options, step.Pieces)
+			end
+		end
+		if #options > 1 then
+			table.insert(setIds, eggId)
+			choices[eggId] = options
+		end
+	end
+	table.sort(setIds)
+
+	local function build(required: { string }): { string }
+		local team: { string } = {}
+		local used: { [string]: boolean } = {}
+		for _, uid in required do
+			table.insert(team, uid)
+			used[uid] = true
+		end
+		for _, entry in ranked do
+			if #team >= slots then
+				break
+			end
+			if not used[entry.Uid] then
+				used[entry.Uid] = true
+				table.insert(team, entry.Uid)
+			end
+		end
+		return team
+	end
+
+	local bestTeam: { string } = {}
+	local bestScore: TeamScore? = nil
+	local required: { string } = {}
+	local function search(index: number, room: number)
+		if index > #setIds then
+			local team = build(required)
+			local score = Formula.teamScore(data, team)
+			if not bestScore or betterTeam(score, bestScore) then
+				bestScore = score
+				bestTeam = team
+			end
+			return
+		end
+		local setId = setIds[index]
+		for _, pieces in choices[setId] do
+			if pieces <= room then
+				local species = bySet[setId]
+				for piece = 1, pieces do
+					table.insert(required, species[piece])
+				end
+				search(index + 1, room - pieces)
+				for _ = 1, pieces do
+					table.remove(required)
+				end
+			end
+		end
+	end
+	if slots > 0 then
+		search(1, slots)
+	end
+	return bestTeam
 end
 
 function Formula.masteryMultiplier(level: number): number

@@ -70,7 +70,7 @@ saved, and receipt ids are recorded so a retried receipt is never granted twice.
 | Pet Index | A collection book with silhouettes of pets you haven't found yet |
 | Pet tiers | Hatch a higher tier by luck, or combine 5 copies (any levels) into the next tier: ⭐ Golden ×3 → 💎 Diamond ×8 → 💚 Emerald ×20 → 🌀 Void ×50 power. Crafting keeps the best level used |
 | Pet levels | Every pet hatches at level 1 to 10; each level above 1 adds +10% power. Levels go up to 100 for future levelling |
-| Easy pet management | Duplicates stack into one card (×12), 🔒 lock favourites, one-click Equip Best / Craft All / Delete Weak, auto-delete chosen rarities on hatch, 150 storage |
+| Easy pet management | Duplicates stack into one card (×12), 🔒 lock favourites, one-click Equip Best (the team that earns the most coins, pet set bonuses included) / Craft All / Delete Weak, auto-delete chosen rarities on hatch, 150 storage |
 | Quality of life | Free Auto Hatch at any egg, Full / Fast / Off hatch animation, Max-buy upgrades, open all gifts at once, ⚙️ Settings for sounds and other players' pets |
 | Areas | Five themed areas, each with a new egg and a bigger multiplier |
 | Rebirth | Trade coins for a permanent multiplier plus gems |
