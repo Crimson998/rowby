@@ -7,6 +7,7 @@ local Formula = shared("Formula")
 local Pets = shared("Pets")
 local Products = shared("Products")
 local Quests = shared("Quests")
+local RebirthPerks = shared("RebirthPerks")
 local Rewards = shared("Rewards")
 local Upgrades = shared("Upgrades")
 local Zones = shared("Zones")
@@ -616,6 +617,30 @@ test("daily rewards advance, wrap after a week and reset after a missed day", fu
 	eq(canClaim, true, "claimable after missing a day")
 	eq(day, 1, "streak resets")
 	eq(streak, 0, "streak count resets")
+end)
+
+-- Rebirth shop -------------------------------------------------------------------------------
+
+test("rebirth tokens are earned by rebirthing and spent on perks", function()
+	local data = { Rebirths = 3, RebirthPerks = {} }
+	eq(Formula.rebirthTokens(data), 3, "one token per rebirth")
+	eq(Formula.perkCost("Storage", 0), 1, "first storage level")
+	data.RebirthPerks.Storage = 3
+	eq(Formula.tokensSpent(data), 4, "1 + 1 + 2 spent")
+	eq(Formula.rebirthTokens(data), 0, "tokens never go negative")
+	eq(Formula.perkLevel({ Rebirths = 0 }, "Storage"), 0, "missing perks are level 0")
+	eq(Formula.perkCost("Storage", #RebirthPerks.ById.Storage.Costs), nil, "maxed perk has no cost")
+	eq(Formula.perkCost("Nope", 0), nil, "unknown perk")
+end)
+
+test("rebirth perks change storage, gems and the head start", function()
+	local data = { Rebirths = 2, RebirthPerks = { Storage = 2, GemFinder = 2, HeadStart = 3 } }
+	eq(Formula.petStorage(data), Config.Pets.Storage + 50, "storage")
+	eq(Formula.nextRebirthGems(data), math.floor(Formula.rebirthGems(2) * 1.5), "gems")
+	eq(Formula.headStartSeconds(data), 180, "head start")
+	local plain = { Rebirths = 2, RebirthPerks = {} }
+	eq(Formula.petStorage(plain), Config.Pets.Storage, "no storage perk")
+	eq(Formula.nextRebirthGems(plain), Formula.rebirthGems(2), "no gem perk")
 end)
 
 -- Formatting ---------------------------------------------------------------------------------

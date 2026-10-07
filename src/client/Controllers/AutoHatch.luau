@@ -76,7 +76,7 @@ local function tryHatch(eggId: string): boolean
 		stop("out of coins.")
 		return false
 	end
-	if Formula.petCount(data) >= Config.Pets.Storage then
+	if Formula.petCount(data) >= Formula.petStorage(data) then
 		stop("pet storage is full.")
 		return false
 	end

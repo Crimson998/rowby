@@ -228,7 +228,7 @@ local function hatch(profile, eggId, count)
 			Odds = if guarantee then guaranteedOdds else odds,
 		})
 	end
-	if Formula.petCount(data) + kept > Config.Pets.Storage then
+	if Formula.petCount(data) + kept > Formula.petStorage(data) then
 		DataService.notify(
 			player,
 			"Pet storage is full! Open 🐾 Pets → Delete Weak, or turn on auto-delete in ⚙️ Settings.",

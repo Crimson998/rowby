@@ -10,6 +10,7 @@ local Config = require(Shared.Config)
 local Format = require(Shared.Format)
 local Formula = require(Shared.Formula)
 local Net = require(Shared.Net)
+local RebirthPerks = require(Shared.RebirthPerks)
 local Upgrades = require(Shared.Upgrades)
 local Zones = require(Shared.Zones)
 
@@ -108,7 +109,7 @@ local function rebirth(profile)
 		DataService.notify(profile.Player, "You need 🪙 " .. Format.number(cost) .. " to rebirth.", "Error")
 		return
 	end
-	local gems = Formula.rebirthGems(data.Rebirths)
+	local gems = Formula.nextRebirthGems(data)
 	data.Coins = 0
 	for _, upgrade in Upgrades.List do
 		if upgrade.ResetsOnRebirth then
@@ -118,12 +119,41 @@ local function rebirth(profile)
 	-- Luck XP starts over too; the new, higher cap lets this run climb further than the last.
 	data.LuckXP = 0
 	data.Rebirths += 1
+	-- Head Start perk: begin the new run with some coins.
+	local headStart = Formula.headStartSeconds(data)
+	if headStart > 0 then
+		data.Coins = Formula.rewardCoins(data, profile.Session, headStart)
+	end
 	DataService.addGems(profile, gems, "Rebirth")
 	AnalyticsService.sink(profile.Player, "Coins", 0, cost, "Rebirth")
 	AnalyticsService.funnel(profile.Player, "FirstRebirth")
 	BadgeService.firstRebirth(profile.Player)
 	DataService.change(profile, "Coins", "Upgrades", "Rebirths", "LuckXP")
 	effectRemote:FireClient(profile.Player, "Rebirth", data.Rebirths, gems)
+end
+
+local function buyPerk(profile, perkId)
+	if type(perkId) ~= "string" then
+		return
+	end
+	local perk = RebirthPerks.ById[perkId]
+	if not perk then
+		return
+	end
+	local data = profile.Data
+	local level = Formula.perkLevel(data, perkId)
+	local cost = Formula.perkCost(perkId, level)
+	if not cost then
+		DataService.notify(profile.Player, perk.Name .. " is maxed out!", "Info")
+		return
+	end
+	if Formula.rebirthTokens(data) < cost then
+		DataService.notify(profile.Player, "Not enough Rebirth Tokens!", "Error")
+		return
+	end
+	data.RebirthPerks[perkId] = level + 1
+	DataService.change(profile, "RebirthPerks")
+	DataService.notify(profile.Player, perk.Icon .. " " .. perk.Name .. " is now level " .. (level + 1), "Success")
 end
 
 function EconomyService.unlockZone(profile, zoneIndex: number)
@@ -226,6 +256,7 @@ function EconomyService.Start()
 	Actions.register("BuyUpgrade", buyUpgrade)
 	Actions.register("ClaimOffline", claimOffline)
 	Actions.register("Rebirth", rebirth)
+	Actions.register("BuyRebirthPerk", buyPerk)
 	Actions.register("UnlockZone", function(profile, zoneIndex)
 		if type(zoneIndex) == "number" then
 			EconomyService.unlockZone(profile, zoneIndex)

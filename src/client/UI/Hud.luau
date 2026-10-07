@@ -533,7 +533,7 @@ local function refreshBadges()
 	end
 	local count = Formula.petCount(data)
 	local hasFreeSlot = equipped < Formula.equipSlots(data, session) and equipped < count
-	badges.Pets.Visible = hasFreeSlot or count >= Config.Pets.Storage * 0.9
+	badges.Pets.Visible = hasFreeSlot or count >= Formula.petStorage(data) * 0.9
 end
 
 -- Floating "+123" above the TAP button.

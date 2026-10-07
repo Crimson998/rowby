@@ -310,7 +310,7 @@ COMMANDS.ServerInfo = function(profile)
 		"Pets owned: "
 			.. Formula.petCount(profile.Data)
 			.. "/"
-			.. Config.Pets.Storage
+			.. Formula.petStorage(profile.Data)
 			.. "   Luck: "
 			.. Format.multiplier(Formula.luck(profile.Data, profile.Session)),
 	}

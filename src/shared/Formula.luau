@@ -7,6 +7,7 @@
 local Config = require(script.Parent.Config)
 local Eggs = require(script.Parent.Eggs)
 local Pets = require(script.Parent.Pets)
+local RebirthPerks = require(script.Parent.RebirthPerks)
 local Upgrades = require(script.Parent.Upgrades)
 local Zones = require(script.Parent.Zones)
 
@@ -389,6 +390,63 @@ end
 
 function Formula.rebirthGems(rebirths: number): number
 	return Config.Rebirth.BaseGems + Config.Rebirth.GemsPerRebirth * rebirths
+end
+
+-- Rebirth shop (see RebirthPerks.luau) ----------------------------------------------------------
+
+function Formula.perkLevel(data, perkId: string): number
+	return if data.RebirthPerks then data.RebirthPerks[perkId] or 0 else 0
+end
+
+-- Tokens to buy the next level of a perk, or nil when it is maxed out (or doesn't exist).
+function Formula.perkCost(perkId: string, level: number): number?
+	local perk = RebirthPerks.ById[perkId]
+	return if perk then perk.Costs[level + 1] else nil
+end
+
+function Formula.tokensSpent(data): number
+	local spent = 0
+	local perks: { [string]: number } = data.RebirthPerks or {}
+	for perkId, level in perks do
+		for index = 1, level do
+			spent += Formula.perkCost(perkId, index - 1) or 0
+		end
+	end
+	return spent
+end
+
+-- Unspent Rebirth Tokens: one per rebirth, minus what the perks bought so far cost.
+function Formula.rebirthTokens(data): number
+	local rebirths: number = data.Rebirths
+	return math.max(rebirths - Formula.tokensSpent(data), 0)
+end
+
+-- Most pets a player can own: Config.Pets.Storage plus the Bigger Storage perk.
+function Formula.petStorage(data): number
+	return Config.Pets.Storage + Formula.perkLevel(data, "Storage") * RebirthPerks.ById.Storage.PerLevel
+end
+
+-- Gems for the player's next rebirth, with the Gem Finder perk.
+function Formula.nextRebirthGems(data): number
+	local bonus = 1 + Formula.perkLevel(data, "GemFinder") * RebirthPerks.ById.GemFinder.PerLevel
+	return math.floor(Formula.rebirthGems(data.Rebirths) * bonus)
+end
+
+-- Seconds of tapping a rebirth starts the next run with, from the Head Start perk.
+function Formula.headStartSeconds(data): number
+	return Formula.perkLevel(data, "HeadStart") * RebirthPerks.ById.HeadStart.PerLevel
+end
+
+function Formula.perkEffect(perkId: string, level: number): string
+	local perk = RebirthPerks.ById[perkId]
+	if perkId == "Storage" then
+		return "+" .. level * perk.PerLevel .. " slots"
+	elseif perkId == "HeadStart" then
+		return level * perk.PerLevel .. "s of coins"
+	elseif perkId == "GemFinder" then
+		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% gems"
+	end
+	return tostring(level)
 end
 
 function Formula.magnetRadius(data): number

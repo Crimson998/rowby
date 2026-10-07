@@ -39,6 +39,8 @@ local TEMPLATE = {
 	Coins = 0,
 	Gems = 0,
 	Rebirths = 0,
+	-- [perkId] = level bought in the Rebirth shop (see RebirthPerks.luau).
+	RebirthPerks = {},
 	HighestZone = 1,
 	-- Lifetime Luck XP from clovers; sets the Luck level.
 	LuckXP = 0,

@@ -25,8 +25,8 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **Trading** (L): two-player trade window, both confirm, short countdown, locked pets excluded, logged. Why: the biggest social feature in pet games.
 - **Server events** (M): a giant chest the whole server taps open together, rewards by contribution. Why: brings players to one spot and to each other.
 - **More areas** (M each): areas 6 to 8 with new eggs, pets and themes after Cosmic Void. Why: late-game players run out of goals.
+- **More rebirth perks** (S): add an auto-collect perk (and others) to the Rebirth shop. Why: the shop launched with three perks.
 - **Pet abilities** (M): some pets gain a perk, such as auto-collecting clovers, faster hatching or bonus gems. Why: pets matter beyond one power number.
-- **Rebirth shop** (M): rebirth tokens spent on permanent perks, such as storage or auto-collect. Why: deepens the long-term loop.
 
 ### Later
 
@@ -44,6 +44,7 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Rebirth shop**: every rebirth earns a Rebirth Token (rebirths minus tokens spent) to spend in a 🛒 Rebirth Shop (opened from the 🔁 Rebirth window) on permanent perks that survive rebirthing: Bigger Storage (+25 pets per level), Head Start (a minute of tapping per level in coins after each rebirth) and Gem Finder (+25% rebirth gems per level). Perks live in `RebirthPerks.luau`, saved in `RebirthPerks`, bought with the `BuyRebirthPerk` action. Auto-collect is not done yet.
 - **Pet set bonuses**: each area's egg is a set; equipping 2, 3, 4 or 5 different pets from it (copies count once) unlocks the best step in `Config.SetBonuses` (coins at every step, luck from 4 pieces), with different sets adding together (`Formula.setProgress`, `Formula.setBonus`). Shown in 📊 Stats (coin and luck rows) and the 🐾 Pets inventory line. Per-family or element sets and a unique perk at the top step are not done yet.
 - **Music volume**: a ⚙️ Settings row with - / + buttons sets music volume in 10% steps (`Settings.MusicVolume`, 0 to 1, validated in `SettingsService`), scaling `Config.Music.Volume`.
 - **README brought up to date**: it now covers index rewards, hatch pity, clover streaks, weekly quests and offline earnings.

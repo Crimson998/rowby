@@ -18,7 +18,7 @@ local NAME = "Rebirth"
 local CONFIRM_SECONDS = 4
 
 function RebirthWindow.build()
-	local body = Windows.create(NAME, "🔁 Rebirth", Theme.Colors.Rebirth, Vector2.new(500, 440))
+	local body = Windows.create(NAME, "🔁 Rebirth", Theme.Colors.Rebirth, Vector2.new(500, 500))
 
 	local count = Util.label({ Size = UDim2.new(1, 0, 0, 30), Text = "", Parent = body })
 	local multiplier = Util.label({
@@ -44,10 +44,20 @@ function RebirthWindow.build()
 	Util.label({
 		Size = UDim2.new(1, 0, 0, 44),
 		Position = UDim2.fromOffset(0, 176),
-		Text = "Resets your coins, Tap Power and Luck level.\nKeeps pets, areas, gems and every other upgrade.\nEach rebirth raises your Luck level cap.",
+		Text = "Resets your coins, Tap Power and Luck level.\nKeeps pets, areas, gems, shop perks and every other upgrade.\nEach rebirth raises your Luck level cap.",
 		TextColor3 = Theme.Colors.SubText,
 		Parent = body,
 	})
+	Util.button({
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 226),
+		Size = UDim2.fromOffset(280, 40),
+		Text = "🛒 Rebirth Shop",
+		Color = Theme.Colors.Blue,
+		Parent = body,
+	}, function()
+		Windows.open("RebirthShop")
+	end)
 	-- Rebirth resets your Luck level, so it takes two taps: the first arms it and shows what
 	-- you'll lose, the second (within CONFIRM_SECONDS) rebirths.
 	local warning = Util.label({
@@ -107,7 +117,7 @@ function RebirthWindow.build()
 			Format.multiplier(Formula.rebirthMultiplier(data.Rebirths + 1))
 		)
 		reward.Text = "Reward: 💎 "
-			.. Formula.rebirthGems(data.Rebirths)
+			.. Formula.nextRebirthGems(data)
 			.. "  ·  🍀 Luck cap Lv "
 			.. Formula.luckCap(data.Rebirths)
 			.. " → "
@@ -128,7 +138,7 @@ function RebirthWindow.build()
 		end
 	end
 
-	State.watch({ "Coins", "Rebirths", "LuckXP" }, refresh)
+	State.watch({ "Coins", "Rebirths", "LuckXP", "RebirthPerks" }, refresh)
 	-- Opening the window always starts unarmed.
 	Windows.onOpen(NAME, function()
 		disarm()
