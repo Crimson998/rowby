@@ -322,6 +322,7 @@ function Formula.coinMultiplier(data, session, includeTemporary: boolean): numbe
 		* (1 + Formula.areaIndexBonus(data))
 		* (1 + (Formula.setBonus(data)))
 		* Formula.rebirthMultiplier(data.Rebirths)
+		* Formula.perkCoinMultiplier(data)
 		* Formula.zoneMultiplier(data)
 		* Formula.masteryMultiplier(Formula.level(data, "CoinMastery"))
 		* Formula.passMultiplier(session)
@@ -588,6 +589,11 @@ function Formula.headStartSeconds(data): number
 	return Formula.perkLevel(data, "HeadStart") * RebirthPerks.ById.HeadStart.PerLevel
 end
 
+-- Coin multiplier from the Coin Surge perk.
+function Formula.perkCoinMultiplier(data): number
+	return 1 + Formula.perkLevel(data, "CoinBonus") * RebirthPerks.ById.CoinBonus.PerLevel
+end
+
 function Formula.perkEffect(perkId: string, level: number): string
 	local perk = RebirthPerks.ById[perkId]
 	if perkId == "Storage" then
@@ -596,12 +602,18 @@ function Formula.perkEffect(perkId: string, level: number): string
 		return level * perk.PerLevel .. "s of coins"
 	elseif perkId == "GemFinder" then
 		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% gems"
+	elseif perkId == "WideMagnet" then
+		return "+" .. level * perk.PerLevel .. " studs"
+	elseif perkId == "CoinBonus" then
+		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% coins"
 	end
 	return tostring(level)
 end
 
 function Formula.magnetRadius(data): number
-	return Config.Orbs.BaseMagnetRadius + Config.Orbs.MagnetPerLevel * Formula.level(data, "Magnet")
+	return Config.Orbs.BaseMagnetRadius
+		+ Config.Orbs.MagnetPerLevel * Formula.level(data, "Magnet")
+		+ Formula.perkLevel(data, "WideMagnet") * RebirthPerks.ById.WideMagnet.PerLevel
 end
 
 function Formula.walkSpeed(data): number

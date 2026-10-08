@@ -10,8 +10,8 @@ export type Perk = {
 	Name: string,
 	Icon: string,
 	Costs: { number },
-	-- Effect of one level: pet storage slots, seconds of tapping to start a run with, or the
-	-- fraction of extra gems from rebirthing.
+	-- Effect of one level: pet storage slots, seconds of tapping to start a run with, the fraction
+	-- of extra gems from rebirthing, studs of clover pickup range, or the fraction of extra coins.
 	PerLevel: number,
 	Description: string,
 }
@@ -40,6 +40,22 @@ local List: { Perk } = {
 		Costs = { 2, 3, 4, 5 },
 		PerLevel = 0.25,
 		Description = "+25% gems from every rebirth per level.",
+	},
+	{
+		Id = "WideMagnet",
+		Name = "Wide Magnet",
+		Icon = "🧲",
+		Costs = { 1, 2, 3, 4 },
+		PerLevel = 4,
+		Description = "+4 studs of clover pickup range per level, on top of Magnet.",
+	},
+	{
+		Id = "CoinBonus",
+		Name = "Coin Surge",
+		Icon = "🪙",
+		Costs = { 2, 3, 4, 5, 6 },
+		PerLevel = 0.05,
+		Description = "+5% coins from everything per level.",
 	},
 }
 

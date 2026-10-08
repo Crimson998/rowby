@@ -752,6 +752,19 @@ test("rebirth perks change storage, gems and the head start", function()
 	eq(Formula.nextRebirthGems(plain), Formula.rebirthGems(2), "no gem perk")
 end)
 
+test("rebirth perks widen the magnet and raise coins", function()
+	local data = freshData()
+	local session = freshSession()
+	local baseRadius = Formula.magnetRadius(data)
+	local baseCoins = Formula.coinMultiplier(data, session, false)
+	data.RebirthPerks = { WideMagnet = 2, CoinBonus = 3 }
+	eq(Formula.magnetRadius(data), baseRadius + 8, "magnet radius")
+	near(Formula.perkCoinMultiplier(data), 1.15, 1e-9, "coin perk")
+	near(Formula.coinMultiplier(data, session, false), baseCoins * 1.15, 1e-9, "feeds coin multiplier")
+	eq(Formula.perkEffect("WideMagnet", 2), "+8 studs", "magnet text")
+	eq(Formula.perkEffect("CoinBonus", 3), "+15% coins", "coin text")
+end)
+
 -- Formatting ---------------------------------------------------------------------------------
 
 test("numbers are abbreviated", function()
