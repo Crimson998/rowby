@@ -262,6 +262,25 @@ function WorldService.Start()
 						collectOrb(profile, orb, clover, zoneIndex)
 					end
 				end
+
+				-- Auto Collect perk: every sweep grabs the nearest clovers wherever they are.
+				local sweeps = Formula.autoCollectCount(profile.Data)
+				local sinceSweep = os.clock() - (profile.Session.LastAutoCollectAt or 0)
+				if sweeps > 0 and sinceSweep >= Config.Orbs.AutoCollectSeconds then
+					profile.Session.LastAutoCollectAt = os.clock()
+					for _ = 1, sweeps do
+						local nearest, nearestClover, nearestDistance = nil, nil, math.huge
+						for orb, clover in orbs[zoneIndex] do
+							local distance = (clover.Position - position).Magnitude
+							if distance < nearestDistance then
+								nearest, nearestClover, nearestDistance = orb, clover, distance
+							end
+						end
+						if nearest and nearestClover then
+							collectOrb(profile, nearest, nearestClover, zoneIndex)
+						end
+					end
+				end
 			end
 		end
 	end)

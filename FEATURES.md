@@ -25,7 +25,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **Trading** (L): two-player trade window, both confirm, short countdown, locked pets excluded, logged. Why: the biggest social feature in pet games.
 - **Server events** (M): a giant chest the whole server taps open together, rewards by contribution. Why: brings players to one spot and to each other.
 - **More areas** (M each): areas 6 to 8 with new eggs, pets and themes after Cosmic Void. Why: late-game players run out of goals.
-- **Auto-collect rebirth perk** (S): a perk that collects clovers without walking to them. Why: the shop's Wide Magnet only widens pickup range.
 - **Pet abilities** (M): some pets gain a perk, such as auto-collecting clovers, faster hatching or bonus gems. Why: pets matter beyond one power number.
 
 ### Later
@@ -44,6 +43,7 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Auto Collect rebirth perk**: a 🤖 Rebirth shop perk (3 levels, 2/3/5 tokens) that every `Config.Orbs.AutoCollectSeconds` (4s) grabs 1 clover per level, nearest first, anywhere in your current area (`Formula.autoCollectCount`, sweep in `WorldService.Start`). The design doc needs the same change.
 - **More rebirth perks**: the Rebirth shop gains Wide Magnet (+4 studs of clover pickup range per level, 4 levels) and Coin Surge (+5% coins per level, 5 levels), in `RebirthPerks.luau` and `Formula` (`magnetRadius`, `perkCoinMultiplier`). True auto-collect is still to add. The design doc needs the same change.
 - **Rebirth shop**: every rebirth earns a Rebirth Token (rebirths minus tokens spent) to spend in a 🛒 Rebirth Shop (opened from the 🔁 Rebirth window) on permanent perks that survive rebirthing: Bigger Storage (+25 pets per level), Head Start (a minute of tapping per level in coins after each rebirth) and Gem Finder (+25% rebirth gems per level). Perks live in `RebirthPerks.luau`, saved in `RebirthPerks`, bought with the `BuyRebirthPerk` action. Auto-collect is not done yet.
 - **Pet set bonuses**: each area's egg is a set; equipping 2, 3, 4 or 5 different pets from it (copies count once) unlocks the best step in `Config.SetBonuses` (coins at every step, luck from 4 pieces), with different sets adding together (`Formula.setProgress`, `Formula.setBonus`). Shown in 📊 Stats (coin and luck rows) and the 🐾 Pets inventory line. Equip Best and auto-equip pick the team that earns the most coins with sets counted (`Formula.bestTeam`, ties go to more luck), so a set team isn't undone after every hatch. Per-family or element sets and a unique perk at the top step are not done yet.

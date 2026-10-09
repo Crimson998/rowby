@@ -134,6 +134,8 @@ Config.Orbs = {
 	LuckyMultiplier = 10,
 	BaseMagnetRadius = 7,
 	MagnetPerLevel = 3,
+	-- Seconds between sweeps of the Auto Collect rebirth perk.
+	AutoCollectSeconds = 4,
 	-- Grabbing clovers within this long of the last one keeps a streak alive, multiplying Luck
 	-- XP by 1 + streak * StreakStep up to StreakMaxMultiplier; a gap longer than this resets it.
 	StreakWindowSeconds = 2.5,

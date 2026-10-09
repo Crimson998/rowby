@@ -604,6 +604,8 @@ function Formula.perkEffect(perkId: string, level: number): string
 		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% gems"
 	elseif perkId == "WideMagnet" then
 		return "+" .. level * perk.PerLevel .. " studs"
+	elseif perkId == "AutoCollect" then
+		return level * perk.PerLevel .. " clover" .. (if level == 1 then "" else "s") .. " per sweep"
 	elseif perkId == "CoinBonus" then
 		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% coins"
 	end
@@ -614,6 +616,11 @@ function Formula.magnetRadius(data): number
 	return Config.Orbs.BaseMagnetRadius
 		+ Config.Orbs.MagnetPerLevel * Formula.level(data, "Magnet")
 		+ Formula.perkLevel(data, "WideMagnet") * RebirthPerks.ById.WideMagnet.PerLevel
+end
+
+-- Clovers the Auto Collect perk grabs from anywhere in the area on each sweep.
+function Formula.autoCollectCount(data): number
+	return Formula.perkLevel(data, "AutoCollect") * RebirthPerks.ById.AutoCollect.PerLevel
 end
 
 function Formula.walkSpeed(data): number

@@ -765,6 +765,15 @@ test("rebirth perks widen the magnet and raise coins", function()
 	eq(Formula.perkEffect("CoinBonus", 3), "+15% coins", "coin text")
 end)
 
+test("the auto collect perk grabs clovers per sweep", function()
+	local data = freshData()
+	eq(Formula.autoCollectCount(data), 0, "none by default")
+	data.RebirthPerks = { AutoCollect = 2 }
+	eq(Formula.autoCollectCount(data), 2, "two per sweep")
+	eq(Formula.perkEffect("AutoCollect", 1), "1 clover per sweep", "singular text")
+	eq(Formula.perkEffect("AutoCollect", 3), "3 clovers per sweep", "plural text")
+end)
+
 -- Formatting ---------------------------------------------------------------------------------
 
 test("numbers are abbreviated", function()
