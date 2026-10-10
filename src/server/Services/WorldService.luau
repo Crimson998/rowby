@@ -152,7 +152,7 @@ local function collectOrb(profile, orb: Model, clover: Clover, zoneIndex: number
 
 	local session = profile.Session
 	local now = os.clock()
-	session.CloverStreak = if now - (session.LastCloverAt or 0) <= Config.Orbs.StreakWindowSeconds
+	session.CloverStreak = if now - (session.LastCloverAt or 0) <= Formula.streakWindow(profile.Data)
 		then (session.CloverStreak or 0) + 1
 		else 0
 	session.LastCloverAt = now

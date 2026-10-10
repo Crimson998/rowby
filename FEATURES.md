@@ -43,6 +43,8 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Streak Keeper rebirth perk**: a 🔥 Rebirth shop perk (3 levels, 1/2/3 tokens) adding 0.5s per level to the clover streak window (`Formula.streakWindow`, used in `WorldService.collectOrb`). The design doc needs the same change.
+- **Lucky Charm rebirth perk**: a 🍀 Rebirth shop perk (4 levels, 3/4/5/6 tokens) adding +10% luck per level (`Formula.luckPerkBonus`, a `FromPerk` row in the luck breakdown and 📊 Stats). The design doc needs the same change.
 - **Auto Collect rebirth perk**: a 🤖 Rebirth shop perk (3 levels, 2/3/5 tokens) that every `Config.Orbs.AutoCollectSeconds` (4s) grabs 1 clover per level, nearest first, anywhere in your current area (`Formula.autoCollectCount`, sweep in `WorldService.Start`). The design doc needs the same change.
 - **More rebirth perks**: the Rebirth shop gains Wide Magnet (+4 studs of clover pickup range per level, 4 levels) and Coin Surge (+5% coins per level, 5 levels), in `RebirthPerks.luau` and `Formula` (`magnetRadius`, `perkCoinMultiplier`). True auto-collect is still to add. The design doc needs the same change.
 - **Rebirth shop**: every rebirth earns a Rebirth Token (rebirths minus tokens spent) to spend in a 🛒 Rebirth Shop (opened from the 🔁 Rebirth window) on permanent perks that survive rebirthing: Bigger Storage (+25 pets per level), Head Start (a minute of tapping per level in coins after each rebirth) and Gem Finder (+25% rebirth gems per level). Perks live in `RebirthPerks.luau`, saved in `RebirthPerks`, bought with the `BuyRebirthPerk` action. Auto-collect is not done yet.

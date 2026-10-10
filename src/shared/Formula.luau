@@ -349,6 +349,12 @@ end
 
 -- Multiplier from a clover-grabbing streak (see Config.Orbs.StreakWindowSeconds): grows by
 -- StreakStep per clover grabbed in quick succession, capped at StreakMaxMultiplier.
+-- Seconds allowed between clovers to keep a streak, with the Streak Keeper perk.
+function Formula.streakWindow(data): number
+	return Config.Orbs.StreakWindowSeconds
+		+ Formula.perkLevel(data, "StreakKeeper") * RebirthPerks.ById.StreakKeeper.PerLevel
+end
+
 function Formula.cloverStreakMultiplier(streak: number): number
 	return math.min(1 + math.max(streak, 0) * Config.Orbs.StreakStep, Config.Orbs.StreakMaxMultiplier)
 end
@@ -421,9 +427,15 @@ export type LuckBreakdown = {
 	FromUpgrade: number,
 	FromPass: number,
 	FromSets: number,
+	FromPerk: number,
 	BoostMultiplier: number,
 	Total: number,
 }
+
+-- Luck added by the Lucky Charm rebirth perk.
+function Formula.luckPerkBonus(data): number
+	return Formula.perkLevel(data, "LuckyCharm") * RebirthPerks.ById.LuckyCharm.PerLevel
+end
 
 -- Where the player's luck comes from. Luck multiplies the weight of Rare-and-better pets.
 function Formula.luckBreakdown(data, session): LuckBreakdown
@@ -432,6 +444,7 @@ function Formula.luckBreakdown(data, session): LuckBreakdown
 	local fromUpgrade = Formula.level(data, "Luck") * 0.1
 	local fromPass = if session.Passes.Lucky then Config.Bonuses.LuckyPassLuck else 0
 	local _, fromSets = Formula.setBonus(data)
+	local fromPerk = Formula.luckPerkBonus(data)
 	local boost = if (data.Boosts.Luck or 0) > 0 then Config.Bonuses.LuckBoostMultiplier else 1
 	return {
 		Level = level,
@@ -439,8 +452,9 @@ function Formula.luckBreakdown(data, session): LuckBreakdown
 		FromUpgrade = fromUpgrade,
 		FromPass = fromPass,
 		FromSets = fromSets,
+		FromPerk = fromPerk,
 		BoostMultiplier = boost,
-		Total = (1 + fromLevel + fromUpgrade + fromPass + fromSets) * boost,
+		Total = (1 + fromLevel + fromUpgrade + fromPass + fromSets + fromPerk) * boost,
 	}
 end
 
@@ -606,6 +620,10 @@ function Formula.perkEffect(perkId: string, level: number): string
 		return "+" .. level * perk.PerLevel .. " studs"
 	elseif perkId == "AutoCollect" then
 		return level * perk.PerLevel .. " clover" .. (if level == 1 then "" else "s") .. " per sweep"
+	elseif perkId == "LuckyCharm" then
+		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% luck"
+	elseif perkId == "StreakKeeper" then
+		return "+" .. level * perk.PerLevel .. "s streak window"
 	elseif perkId == "CoinBonus" then
 		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% coins"
 	end

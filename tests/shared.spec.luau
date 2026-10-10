@@ -774,6 +774,26 @@ test("the auto collect perk grabs clovers per sweep", function()
 	eq(Formula.perkEffect("AutoCollect", 3), "3 clovers per sweep", "plural text")
 end)
 
+test("the lucky charm perk adds luck", function()
+	local data = freshData()
+	local session = freshSession()
+	local base = Formula.luck(data, session)
+	eq(Formula.luckPerkBonus(data), 0, "none by default")
+	data.RebirthPerks = { LuckyCharm = 3 }
+	near(Formula.luckPerkBonus(data), 0.3, 1e-9, "three levels")
+	near(Formula.luckBreakdown(data, session).FromPerk, 0.3, 1e-9, "breakdown")
+	near(Formula.luck(data, session), base + 0.3, 1e-9, "feeds total luck")
+	eq(Formula.perkEffect("LuckyCharm", 2), "+20% luck", "text")
+end)
+
+test("the streak keeper perk widens the streak window", function()
+	local data = freshData()
+	eq(Formula.streakWindow(data), Config.Orbs.StreakWindowSeconds, "default window")
+	data.RebirthPerks = { StreakKeeper = 2 }
+	near(Formula.streakWindow(data), Config.Orbs.StreakWindowSeconds + 1, 1e-9, "two levels")
+	eq(Formula.perkEffect("StreakKeeper", 3), "+1.5s streak window", "text")
+end)
+
 -- Formatting ---------------------------------------------------------------------------------
 
 test("numbers are abbreviated", function()

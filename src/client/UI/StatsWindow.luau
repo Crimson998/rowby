@@ -96,6 +96,7 @@ function StatsWindow.build()
 	local fromUpgrade = row("Egg Luck upgrade")
 	local fromPass = row("Lucky Eggs pass")
 	local fromSets = row("Pet set bonuses")
+	local fromPerk = row("Lucky Charm perk")
 	local fromBoost = row("2x Luck boost")
 	local totalLuck = row("Total luck", true)
 	local cloverValues = {}
@@ -165,6 +166,7 @@ function StatsWindow.build()
 		fromUpgrade.Text = percent(luck.FromUpgrade)
 		fromPass.Text = if session.Passes.Lucky then percent(luck.FromPass) else "not owned"
 		fromSets.Text = if luck.FromSets > 0 then percent(luck.FromSets) else "none"
+		fromPerk.Text = if luck.FromPerk > 0 then percent(luck.FromPerk) else "none"
 		fromBoost.Text = if luck.BoostMultiplier > 1
 			then "x" .. luck.BoostMultiplier .. " (" .. Format.time(data.Boosts.Luck) .. ")"
 			else "inactive"

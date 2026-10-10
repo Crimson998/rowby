@@ -12,7 +12,7 @@ export type Perk = {
 	Costs: { number },
 	-- Effect of one level: pet storage slots, seconds of tapping to start a run with, the fraction
 	-- of extra gems from rebirthing, studs of clover pickup range, the fraction of extra coins, or
-	-- clovers grabbed per auto-collect sweep.
+	-- clovers grabbed per auto-collect sweep, the luck added, or seconds added to the clover streak window.
 	PerLevel: number,
 	Description: string,
 }
@@ -65,6 +65,22 @@ local List: { Perk } = {
 		Costs = { 2, 3, 5 },
 		PerLevel = 1,
 		Description = "Every few seconds, grabs 1 clover per level anywhere in your area, no walking needed.",
+	},
+	{
+		Id = "LuckyCharm",
+		Name = "Lucky Charm",
+		Icon = "🍀",
+		Costs = { 3, 4, 5, 6 },
+		PerLevel = 0.1,
+		Description = "+10% luck per level, added to your other luck.",
+	},
+	{
+		Id = "StreakKeeper",
+		Name = "Streak Keeper",
+		Icon = "🔥",
+		Costs = { 1, 2, 3 },
+		PerLevel = 0.5,
+		Description = "+0.5s to the time you have between clovers before your streak resets, per level.",
 	},
 }
 
