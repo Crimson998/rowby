@@ -32,7 +32,6 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **Clans** (L): groups with shared goals and a clan leaderboard. Why: long-term social retention.
 - **Gift passes** (M): buy a pass for another player in the server. Why: social spending without pressure.
 - **Translation** (M): localization tables for UI text, starting with the most common languages. Why: reaches non-English players.
-- **Save rollback** (M): admin command to restore a player's earlier save version. Why: fixes lost-progress reports.
 - **Seasonal areas** (L): themed areas that return each year; their pets stay earnable in later years. Why: events without permanent fear of missing out.
 
 ## Known bugs
@@ -66,3 +65,4 @@ Noted to fix later; not features.
 - **Per-egg hatch pity**: pity is now counted separately for each egg (`EggPity`), so misses on a cheap egg no longer carry to an expensive one; each egg's odds board shows its own progress. Old shared pity progress resets.
 - **Clover streak rounding**: streak-boosted Luck XP uses random rounding, so every streak step counts even when clovers give 1 XP.
 - **Weekly quests auto-claim**: finished but unclaimed weekly quests pay their gems (with a toast) when the week refreshes instead of disappearing.
+- **Save rollback**: the 🛠 admin panel has a "Save rollback" section: List saves shows a player's 10 newest stored versions by user id, and Restore save writes an earlier version back (`DataService.listVersions` / `restoreVersion`, `ListSaves` / `RestoreSave` admin commands). Only works while the player is offline everywhere; receipts and one-time purchases are kept from the current save so nothing is granted twice.

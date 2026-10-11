@@ -337,6 +337,17 @@ function AdminWindow.build(): ()
 		run("ListCodes")
 	end)
 
+	-- Save rollback
+	local saves = section("⏪ Save rollback")
+	local saveUser = numberBox(saves, "User id", "")
+	local saveVersion = numberBox(saves, "Version", "")
+	button(saves, "List saves", Theme.Colors.Gray, function()
+		run("ListSaves", saveUser.Text)
+	end)
+	button(saves, "Restore save", Theme.Colors.Red, function()
+		run("RestoreSave", saveUser.Text, saveVersion.Text)
+	end)
+
 	-- Testing & debug
 	local testing = section("🧪 Testing & debug")
 	local eggIndex = picker(testing, #Eggs.List, function(index)

@@ -291,6 +291,73 @@ function DataService.save(profile: Profile, release: boolean?): boolean
 	return ok
 end
 
+-- Admin: lists a player's most recent stored save versions, newest first.
+function DataService.listVersions(userId: number, limit: number?): ({ { Version: string, Created: number } }?, string?)
+	if mockMode or not store then
+		return nil, "No DataStore (mock data)."
+	end
+	local dataStore = store :: DataStore
+	local ok, pages = pcall(function()
+		return dataStore:ListVersionsAsync(keyFor(userId), Enum.SortDirection.Descending)
+	end)
+	if not ok then
+		return nil, tostring(pages)
+	end
+	local versions = {}
+	for _, info in (pages :: any):GetCurrentPage() do
+		table.insert(versions, { Version = info.Version, Created = math.floor(info.CreatedTime / 1000) })
+		if #versions >= (limit or 10) then
+			break
+		end
+	end
+	return versions
+end
+
+-- Admin: replaces an offline player's save with an earlier version. Receipts and one-time
+-- purchases are kept from the current save so real purchases can never be granted twice.
+function DataService.restoreVersion(userId: number, version: string): (boolean, string)
+	if mockMode or not store then
+		return false, "No DataStore (mock data)."
+	end
+	for player in profiles do
+		if player.UserId == userId then
+			return false, "Player is in this server; ask them to leave first."
+		end
+	end
+	local dataStore = store :: DataStore
+	local fetched, old = pcall(function()
+		return dataStore:GetVersionAsync(keyFor(userId), version)
+	end)
+	if not fetched or type(old) ~= "table" then
+		return false, "Couldn't read that version."
+	end
+	local restored = deepCopy(old)
+	local busy = false
+	local ok, err = pcall(function()
+		dataStore:UpdateAsync(keyFor(userId), function(current)
+			busy = false
+			local lock = current and current._Lock
+			if lock and lock.JobId ~= game.JobId and os.time() - lock.Time < Config.Data.SessionLockSeconds then
+				busy = true
+				return nil
+			end
+			if current then
+				restored.Purchases = current.Purchases
+				restored.OneTime = current.OneTime
+			end
+			restored._Lock = nil
+			return restored, { userId }
+		end)
+	end)
+	if not ok then
+		return false, tostring(err)
+	end
+	if busy then
+		return false, "Player is online in another server; ask them to leave first."
+	end
+	return true, "Restored."
+end
+
 function DataService.get(player: Player): Profile?
 	return profiles[player]
 end

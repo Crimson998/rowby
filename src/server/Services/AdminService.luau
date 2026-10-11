@@ -353,6 +353,44 @@ COMMANDS.ListCodes = function(profile)
 	return true, if #lines > 0 then table.concat(lines, "\n") else "No live codes."
 end
 
+-- Save rollback ---------------------------------------------------------------------------------
+
+local function userIdArg(value: any): number?
+	local id = tonumber(value)
+	if not id or id ~= id or id < 1 or id % 1 ~= 0 then
+		return nil
+	end
+	return id
+end
+
+COMMANDS.ListSaves = function(_profile, userId)
+	local id = userIdArg(userId)
+	if not id then
+		return false, "Enter a user id."
+	end
+	local versions, reason = DataService.listVersions(id, 10)
+	if not versions then
+		return false, reason or "Failed."
+	end
+	local lines = {}
+	for _, info in versions do
+		table.insert(lines, info.Version .. "  " .. os.date("!%Y-%m-%d %H:%M UTC", info.Created))
+	end
+	return true, if #lines > 0 then table.concat(lines, "\n") else "No saved versions."
+end
+
+COMMANDS.RestoreSave = function(_profile, userId, version)
+	local id = userIdArg(userId)
+	if not id or type(version) ~= "string" or version == "" or #version > 100 then
+		return false, "Enter a user id and a version (see List saves)."
+	end
+	local ok, message = DataService.restoreVersion(id, version)
+	if ok then
+		print(string.format("[Admin] Restored save %s for user %d", version, id))
+	end
+	return ok, message
+end
+
 COMMANDS.SaveNow = function(profile)
 	local saved = DataService.save(profile)
 	return saved, if saved then "Saved." else "Save failed (see Output)."
