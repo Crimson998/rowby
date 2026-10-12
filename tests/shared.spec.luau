@@ -794,6 +794,22 @@ test("the streak keeper perk widens the streak window", function()
 	eq(Formula.perkEffect("StreakKeeper", 3), "+1.5s streak window", "text")
 end)
 
+test("the swift boots perk adds walk speed", function()
+	local data = freshData()
+	eq(Formula.walkSpeed(data), Config.WalkSpeed.Base, "default speed")
+	data.RebirthPerks = { SwiftBoots = 3 }
+	eq(Formula.walkSpeed(data), Config.WalkSpeed.Base + 3, "three levels")
+	eq(Formula.perkEffect("SwiftBoots", 2), "+2 speed", "text")
+end)
+
+test("the clover feast perk boosts clover Luck XP", function()
+	local data = freshData()
+	eq(Formula.cloverXPMultiplier(data), 1, "none by default")
+	data.RebirthPerks = { CloverFeast = 3 }
+	near(Formula.cloverXPMultiplier(data), 1.3, 1e-9, "three levels")
+	eq(Formula.perkEffect("CloverFeast", 2), "+20% clover XP", "text")
+end)
+
 -- Formatting ---------------------------------------------------------------------------------
 
 test("numbers are abbreviated", function()

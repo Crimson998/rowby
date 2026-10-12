@@ -42,6 +42,7 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Swift Boots and Clover Feast rebirth perks**: two more Rebirth shop perks. 👟 Swift Boots (4 levels, 1/2/3/4 tokens) adds +1 walk speed per level (`Formula.walkSpeed`, reapplied on purchase); 🍽️ Clover Feast (4 levels, 2/3/4/5 tokens) adds +10% Luck XP from clovers per level (`Formula.cloverXPMultiplier`, used in `WorldService.collectOrb`). The design doc needs the same change.
 - **Streak Keeper rebirth perk**: a 🔥 Rebirth shop perk (3 levels, 1/2/3 tokens) adding 0.5s per level to the clover streak window (`Formula.streakWindow`, used in `WorldService.collectOrb`). The design doc needs the same change.
 - **Lucky Charm rebirth perk**: a 🍀 Rebirth shop perk (4 levels, 3/4/5/6 tokens) adding +10% luck per level (`Formula.luckPerkBonus`, a `FromPerk` row in the luck breakdown and 📊 Stats). The design doc needs the same change.
 - **Auto Collect rebirth perk**: a 🤖 Rebirth shop perk (3 levels, 2/3/5 tokens) that every `Config.Orbs.AutoCollectSeconds` (4s) grabs 1 clover per level, nearest first, anywhere in your current area (`Formula.autoCollectCount`, sweep in `WorldService.Start`). The design doc needs the same change.

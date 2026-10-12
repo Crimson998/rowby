@@ -160,7 +160,7 @@ local function collectOrb(profile, orb: Model, clover: Clover, zoneIndex: number
 	local data = profile.Data
 	local base = Formula.cloverValue(zoneIndex, kind == "LuckyClover")
 	-- Random rounding, so a streak step worth +0.3 XP pays 1 XP about 30% of the time.
-	local scaled = base * Formula.cloverStreakMultiplier(session.CloverStreak)
+	local scaled = base * Formula.cloverStreakMultiplier(session.CloverStreak) * Formula.cloverXPMultiplier(data)
 	local amount = math.floor(scaled) + (if orbRng:NextNumber() < scaled % 1 then 1 else 0)
 	-- At the Luck cap clovers stop paying (progress toward the next level stops at 1 XP short),
 	-- which is the cue to rebirth.

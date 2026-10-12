@@ -153,6 +153,9 @@ local function buyPerk(profile, perkId)
 	end
 	data.RebirthPerks[perkId] = level + 1
 	DataService.change(profile, "RebirthPerks")
+	if perkId == "SwiftBoots" then
+		EconomyService.applyWalkSpeed(profile)
+	end
 	DataService.notify(profile.Player, perk.Icon .. " " .. perk.Name .. " is now level " .. (level + 1), "Success")
 end
 

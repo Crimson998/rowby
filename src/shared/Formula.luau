@@ -624,6 +624,10 @@ function Formula.perkEffect(perkId: string, level: number): string
 		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% luck"
 	elseif perkId == "StreakKeeper" then
 		return "+" .. level * perk.PerLevel .. "s streak window"
+	elseif perkId == "SwiftBoots" then
+		return "+" .. level * perk.PerLevel .. " speed"
+	elseif perkId == "CloverFeast" then
+		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% clover XP"
 	elseif perkId == "CoinBonus" then
 		return "+" .. math.floor(level * perk.PerLevel * 100 + 0.5) .. "% coins"
 	end
@@ -642,7 +646,14 @@ function Formula.autoCollectCount(data): number
 end
 
 function Formula.walkSpeed(data): number
-	return Config.WalkSpeed.Base + Config.WalkSpeed.PerLevel * Formula.level(data, "WalkSpeed")
+	return Config.WalkSpeed.Base
+		+ Config.WalkSpeed.PerLevel * Formula.level(data, "WalkSpeed")
+		+ Formula.perkLevel(data, "SwiftBoots") * RebirthPerks.ById.SwiftBoots.PerLevel
+end
+
+-- Multiplier on Luck XP from clovers, from the Clover Feast perk.
+function Formula.cloverXPMultiplier(data): number
+	return 1 + Formula.perkLevel(data, "CloverFeast") * RebirthPerks.ById.CloverFeast.PerLevel
 end
 
 -- Human-readable effect of an upgrade at a given level ("x12 per tap", "+30% luck").
