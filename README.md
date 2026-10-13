@@ -231,6 +231,10 @@ That track then loops everywhere. To give an area its own track, fill in its ent
 `Config.Music.Areas` (Meadow, Candy, Frost, Lava, Cosmic); walking between areas crossfades.
 Players can turn music off in ⚙️ Settings. Volume and fade time are in `Config.Music` too.
 
+**Ambience:** `Config.Ambience` works the same way (a `Default` plus per-area `Areas`) for a quiet looping layer
+under the music, like wind or crackling lava. It is empty until you add ids, crossfades between areas, and follows
+the same ⚙️ Music on/off and volume settings.
+
 Audio you upload is private to your account, so it plays in your own games. If it stays silent,
 check the Output window for a permission message and allow the audio for this experience.
 

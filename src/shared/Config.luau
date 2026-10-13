@@ -281,6 +281,23 @@ Config.Music = {
 	},
 }
 
+--[[
+	Ambient sound, a quiet looping layer under the music (wind, birds, crackling lava). Same rules as
+	Config.Music: paste asset ids, Default plays everywhere, Areas (keyed by Theme) replace it, ""
+	means none. It crossfades with the music (Music.FadeSeconds) and follows the Music settings.
+]]
+Config.Ambience = {
+	Volume = 0.2,
+	Default = "",
+	Areas = {
+		Meadow = "",
+		Candy = "",
+		Frost = "",
+		Lava = "",
+		Cosmic = "",
+	},
+}
+
 -- Built-in engine sounds so the place works without uploading audio. Swap for your own asset ids.
 Config.Sounds = {
 	Tap = "rbxasset://sounds/clickfast.wav",
