@@ -54,6 +54,27 @@ function Formula.petPower(petId: string, tier: number?, level: number?): number
 	return pet.Power * Config.Tiers[Formula.tier(tier)].Multiplier * Formula.levelMultiplier(level)
 end
 
+-- Extra fraction of clover Luck XP from the CloverXP abilities of equipped pets (copies stack).
+function Formula.abilityCloverXP(data): number
+	local total = 0
+	for _, pet in data.Pets do
+		local def = Pets[pet.Id]
+		if pet.Equipped and def and def.Ability and def.Ability.Kind == "CloverXP" then
+			total += def.Ability.Amount
+		end
+	end
+	return total
+end
+
+-- Short text for a pet's ability ("+5% clover XP"), or nil if it has none.
+function Formula.abilityText(petId: string): string?
+	local def = Pets[petId]
+	if def and def.Ability and def.Ability.Kind == "CloverXP" then
+		return string.format("+%d%% clover XP", math.floor(def.Ability.Amount * 100 + 0.5))
+	end
+	return nil
+end
+
 function Formula.petBonus(data): number
 	local total = 0
 	for _, pet in data.Pets do
@@ -653,7 +674,9 @@ end
 
 -- Multiplier on Luck XP from clovers, from the Clover Feast perk.
 function Formula.cloverXPMultiplier(data): number
-	return 1 + Formula.perkLevel(data, "CloverFeast") * RebirthPerks.ById.CloverFeast.PerLevel
+	return 1
+		+ Formula.perkLevel(data, "CloverFeast") * RebirthPerks.ById.CloverFeast.PerLevel
+		+ Formula.abilityCloverXP(data)
 end
 
 -- Human-readable effect of an upgrade at a given level ("x12 per tap", "+30% luck").

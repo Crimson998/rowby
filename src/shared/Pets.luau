@@ -10,6 +10,13 @@
 	Shape = "Blob" squashes the body; Neon = true makes the accent glow.
 ]]
 
+-- A perk an equipped pet gives on top of its power. Kind "CloverXP": Amount is the extra fraction of
+-- Luck XP from clovers (0.05 = +5%); every equipped copy stacks (see Formula.abilityCloverXP).
+export type Ability = {
+	Kind: string,
+	Amount: number,
+}
+
 export type Pet = {
 	Name: string,
 	Rarity: string,
@@ -20,6 +27,7 @@ export type Pet = {
 	Shape: string?,
 	Neon: boolean?,
 	Exclusive: boolean?,
+	Ability: Ability?,
 }
 
 local rgb = Color3.fromRGB
@@ -49,6 +57,7 @@ local Pets: { [string]: Pet } = {
 		Color = rgb(250, 250, 250),
 		Accent = rgb(255, 170, 195),
 		Features = { "BunnyEars" },
+		Ability = { Kind = "CloverXP", Amount = 0.03 },
 	},
 	Bumblebee = {
 		Name = "Bumblebee",
@@ -66,6 +75,7 @@ local Pets: { [string]: Pet } = {
 		Accent = rgb(255, 255, 210),
 		Features = { "Wings", "Halo" },
 		Neon = true,
+		Ability = { Kind = "CloverXP", Amount = 0.1 },
 	},
 
 	-- Candy Kingdom
@@ -127,6 +137,7 @@ local Pets: { [string]: Pet } = {
 		Color = rgb(240, 245, 255),
 		Accent = rgb(255, 200, 60),
 		Features = { "Beak", "Wings" },
+		Ability = { Kind = "CloverXP", Amount = 0.05 },
 	},
 	IceWolf = {
 		Name = "Ice Wolf",
@@ -161,6 +172,7 @@ local Pets: { [string]: Pet } = {
 		Accent = rgb(255, 255, 255),
 		Features = { "Wings", "Crown" },
 		Neon = true,
+		Ability = { Kind = "CloverXP", Amount = 0.15 },
 	},
 
 	-- Lava Land
@@ -226,6 +238,7 @@ local Pets: { [string]: Pet } = {
 		Color = rgb(255, 240, 150),
 		Accent = rgb(255, 255, 255),
 		Features = { "Antenna" },
+		Ability = { Kind = "CloverXP", Amount = 0.08 },
 	},
 	MoonCat = {
 		Name = "Moon Cat",
@@ -270,6 +283,7 @@ local Pets: { [string]: Pet } = {
 		Accent = rgb(170, 80, 255),
 		Features = { "Tentacles", "Crown" },
 		Neon = true,
+		Ability = { Kind = "CloverXP", Amount = 0.2 },
 	},
 	Rowby = {
 		Name = "Rowby",

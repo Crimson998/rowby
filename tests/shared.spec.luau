@@ -810,6 +810,20 @@ test("the clover feast perk boosts clover Luck XP", function()
 	eq(Formula.perkEffect("CloverFeast", 2), "+20% clover XP", "text")
 end)
 
+test("pet abilities boost clover Luck XP while equipped and stack", function()
+	local data = freshData()
+	data.Pets = {
+		a = { Id = "Eagle", Tier = 1, Level = 1, Equipped = true },
+		b = { Id = "Eagle", Tier = 1, Level = 1, Equipped = true },
+		c = { Id = "Eagle", Tier = 1, Level = 1, Equipped = false },
+		d = { Id = "Doggy", Tier = 1, Level = 1, Equipped = true },
+	}
+	near(Formula.abilityCloverXP(data), 0.2, 1e-9, "two equipped eagles")
+	near(Formula.cloverXPMultiplier(data), 1.2, 1e-9, "multiplier")
+	eq(Formula.abilityText("Eagle"), "+10% clover XP", "text")
+	eq(Formula.abilityText("Doggy"), nil, "no ability")
+end)
+
 -- Formatting ---------------------------------------------------------------------------------
 
 test("numbers are abbreviated", function()

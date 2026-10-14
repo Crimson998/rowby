@@ -24,7 +24,7 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 - **Trading** (L): two-player trade window, both confirm, short countdown, locked pets excluded, logged. Why: the biggest social feature in pet games.
 - **Server events** (M): a giant chest the whole server taps open together, rewards by contribution. Why: brings players to one spot and to each other.
 - **More areas** (M each): areas 6 to 8 with new eggs, pets and themes after Cosmic Void. Why: late-game players run out of goals.
-- **Pet abilities** (M): some pets gain a perk, such as auto-collecting clovers, faster hatching or bonus gems. Why: pets matter beyond one power number.
+- **Pet abilities** (M, partly done): the clover Luck XP perk is shipped; still to add are abilities for auto-collecting clovers, faster hatching and bonus gems. Why: pets matter beyond one power number.
 
 ### Later
 
@@ -41,6 +41,7 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Pet abilities (clover XP)**: pets can carry an `Ability` (`Pets.luau`); Bunny, Eagle, Snow Owl, Frost Phoenix, Star Sprite and Void Kraken give +3% to +20% clover Luck XP while equipped, stacking per copy (`Formula.abilityCloverXP`, folded into `cloverXPMultiplier`) and shown in the 🐾 Pets detail. The design doc needs the same change.
 - **Ambient sounds**: `Config.Ambience` (a `Default` plus per-area `Areas`, ids left empty until uploaded) plays a quiet looping layer under the music, crossfading between areas and following the Music on/off and volume settings (`Music.luau` now runs both as layers). The design doc needs the same change; Music and ambience is now fully shipped.
 - **Swift Boots and Clover Feast rebirth perks**: two more Rebirth shop perks. 👟 Swift Boots (4 levels, 1/2/3/4 tokens) adds +1 walk speed per level (`Formula.walkSpeed`, reapplied on purchase); 🍽️ Clover Feast (4 levels, 2/3/4/5 tokens) adds +10% Luck XP from clovers per level (`Formula.cloverXPMultiplier`, used in `WorldService.collectOrb`). The design doc needs the same change.
 - **Streak Keeper rebirth perk**: a 🔥 Rebirth shop perk (3 levels, 1/2/3 tokens) adding 0.5s per level to the clover streak window (`Formula.streakWindow`, used in `WorldService.collectOrb`). The design doc needs the same change.

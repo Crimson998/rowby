@@ -231,6 +231,10 @@ local function refreshDetail(stack: Stack?)
 	detailName.Text = (if stack.Tier > 1 then tierDef.Icon .. " " .. tierDef.Name .. " " else "") .. def.Name
 	detailRarity.Text =
 		string.format("%s  ·  Lv %d  ·  +%sx each", def.Rarity, stack.Level, Format.number(stack.Power))
+	local abilityText = Formula.abilityText(stack.Id)
+	if abilityText then
+		detailRarity.Text ..= "  ·  ✨ " .. abilityText
+	end
 	detailRarity.TextColor3 = rarityColor(stack.Id)
 	detailOwned.Text =
 		string.format("Owned %d  ·  Equipped %d  ·  Locked %d", #stack.All, #stack.Equipped, stack.LockedCount)
