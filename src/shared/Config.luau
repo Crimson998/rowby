@@ -36,6 +36,8 @@ Config.Pets = {
 	-- Copies of one pet at one tier that combine into one pet of the next tier (see Config.Tiers).
 	CraftCopies = 5,
 	HatchCooldown = 1.3,
+	-- Most the HatchSpeed pet abilities can shorten the hatch cooldown (0.4 = 40% shorter).
+	MaxHatchSpeed = 0.4,
 	HatchRange = 20,
 	-- Rarities players may auto-delete on hatch (Settings). Rarer pets are always kept.
 	AutoDeletable = { "Common", "Uncommon", "Rare", "Epic" },

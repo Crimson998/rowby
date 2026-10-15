@@ -824,6 +824,24 @@ test("pet abilities boost clover Luck XP while equipped and stack", function()
 	eq(Formula.abilityText("Doggy"), nil, "no ability")
 end)
 
+test("HatchSpeed and GemBonus abilities shorten hatching and raise rebirth gems", function()
+	local data = freshData()
+	near(Formula.hatchCooldown(data), Config.Pets.HatchCooldown, 1e-9, "no ability")
+	data.Pets = {
+		a = { Id = "CandyDragon", Tier = 1, Level = 1, Equipped = true },
+		b = { Id = "Phoenix", Tier = 1, Level = 1, Equipped = true },
+	}
+	near(Formula.hatchCooldown(data), Config.Pets.HatchCooldown * 0.9, 1e-9, "dragon")
+	near(Formula.abilityTotal(data, "GemBonus"), 0.1, 1e-9, "phoenix gems")
+	eq(Formula.nextRebirthGems(data), math.floor(Formula.rebirthGems(data.Rebirths) * 1.1), "gems")
+	for i = 1, 10 do
+		data.Pets["x" .. i] = { Id = "CandyDragon", Tier = 1, Level = 1, Equipped = true }
+	end
+	near(Formula.hatchCooldown(data), Config.Pets.HatchCooldown * 0.6, 1e-9, "capped")
+	eq(Formula.abilityText("CandyDragon"), "+10% faster hatching", "speed text")
+	eq(Formula.abilityText("Phoenix"), "+10% rebirth gems", "gem text")
+end)
+
 -- Formatting ---------------------------------------------------------------------------------
 
 test("numbers are abbreviated", function()

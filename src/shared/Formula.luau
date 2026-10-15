@@ -54,23 +54,41 @@ function Formula.petPower(petId: string, tier: number?, level: number?): number
 	return pet.Power * Config.Tiers[Formula.tier(tier)].Multiplier * Formula.levelMultiplier(level)
 end
 
--- Extra fraction of clover Luck XP from the CloverXP abilities of equipped pets (copies stack).
-function Formula.abilityCloverXP(data): number
+-- Sum of one ability kind (as a fraction) over the equipped pets; copies stack.
+function Formula.abilityTotal(data, kind: string): number
 	local total = 0
 	for _, pet in data.Pets do
 		local def = Pets[pet.Id]
-		if pet.Equipped and def and def.Ability and def.Ability.Kind == "CloverXP" then
+		if pet.Equipped and def and def.Ability and def.Ability.Kind == kind then
 			total += def.Ability.Amount
 		end
 	end
 	return total
 end
 
+-- Extra fraction of clover Luck XP from the CloverXP abilities of equipped pets (copies stack).
+function Formula.abilityCloverXP(data): number
+	return Formula.abilityTotal(data, "CloverXP")
+end
+
+-- Seconds between egg hatches: the base cooldown shortened by HatchSpeed abilities, up to the cap.
+function Formula.hatchCooldown(data): number
+	local speed = math.min(Formula.abilityTotal(data, "HatchSpeed"), Config.Pets.MaxHatchSpeed)
+	return Config.Pets.HatchCooldown * (1 - speed)
+end
+
+local ABILITY_TEXT = {
+	CloverXP = "%d%% clover XP",
+	HatchSpeed = "%d%% faster hatching",
+	GemBonus = "%d%% rebirth gems",
+}
+
 -- Short text for a pet's ability ("+5% clover XP"), or nil if it has none.
 function Formula.abilityText(petId: string): string?
 	local def = Pets[petId]
-	if def and def.Ability and def.Ability.Kind == "CloverXP" then
-		return string.format("+%d%% clover XP", math.floor(def.Ability.Amount * 100 + 0.5))
+	local format = if def and def.Ability then ABILITY_TEXT[def.Ability.Kind] else nil
+	if def and def.Ability and format then
+		return "+" .. string.format(format, math.floor(def.Ability.Amount * 100 + 0.5))
 	end
 	return nil
 end
@@ -613,9 +631,10 @@ function Formula.petStorage(data): number
 	return Config.Pets.Storage + Formula.perkLevel(data, "Storage") * RebirthPerks.ById.Storage.PerLevel
 end
 
--- Gems for the player's next rebirth, with the Gem Finder perk.
+-- Gems for the player's next rebirth, with the Gem Finder perk and GemBonus pet abilities.
 function Formula.nextRebirthGems(data): number
 	local bonus = 1 + Formula.perkLevel(data, "GemFinder") * RebirthPerks.ById.GemFinder.PerLevel
+	bonus += Formula.abilityTotal(data, "GemBonus")
 	return math.floor(Formula.rebirthGems(data.Rebirths) * bonus)
 end
 

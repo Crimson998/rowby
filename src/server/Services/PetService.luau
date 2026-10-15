@@ -169,7 +169,7 @@ local function hatch(profile, eggId, count)
 		return
 	end
 	local now = os.clock()
-	if now - (session.LastHatch or 0) < Config.Pets.HatchCooldown then
+	if now - (session.LastHatch or 0) < Formula.hatchCooldown(data) then
 		return
 	end
 	local character = player.Character

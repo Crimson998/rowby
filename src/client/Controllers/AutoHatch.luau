@@ -9,7 +9,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = require(Shared.Config)
 local Eggs = require(Shared.Eggs)
 local Formula = require(Shared.Formula)
 
@@ -130,7 +129,7 @@ function AutoHatch.start()
 			if not enabled or not eggId then
 				continue
 			end
-			if HatchOverlay.isPlaying() or os.clock() - lastHatch < Config.Pets.HatchCooldown + 0.15 then
+			if HatchOverlay.isPlaying() or os.clock() - lastHatch < Formula.hatchCooldown(State.Data) + 0.15 then
 				continue
 			end
 			if tryHatch(eggId) then

@@ -10,8 +10,11 @@
 	Shape = "Blob" squashes the body; Neon = true makes the accent glow.
 ]]
 
--- A perk an equipped pet gives on top of its power. Kind "CloverXP": Amount is the extra fraction of
--- Luck XP from clovers (0.05 = +5%); every equipped copy stacks (see Formula.abilityCloverXP).
+-- A perk an equipped pet gives on top of its power; every equipped copy stacks (Formula.abilityTotal).
+-- Amount is a fraction (0.05 = +5%). Kinds:
+--   CloverXP   extra Luck XP from clovers
+--   HatchSpeed shorter egg hatch cooldown (capped by Config.Pets.MaxHatchSpeed)
+--   GemBonus   extra gems from rebirthing
 export type Ability = {
 	Kind: string,
 	Amount: number,
@@ -66,6 +69,8 @@ local Pets: { [string]: Pet } = {
 		Color = rgb(255, 210, 40),
 		Accent = rgb(45, 45, 45),
 		Features = { "Wings", "Antenna" },
+
+		Ability = { Kind = "HatchSpeed", Amount = 0.05 },
 	},
 	Eagle = {
 		Name = "Eagle",
@@ -110,6 +115,8 @@ local Pets: { [string]: Pet } = {
 		Color = rgb(230, 170, 110),
 		Accent = rgb(255, 100, 200),
 		Features = { "DogEars", "Crown" },
+
+		Ability = { Kind = "GemBonus", Amount = 0.05 },
 	},
 	CandyDragon = {
 		Name = "Candy Dragon",
@@ -119,6 +126,8 @@ local Pets: { [string]: Pet } = {
 		Accent = rgb(120, 255, 230),
 		Features = { "Horns", "Wings" },
 		Neon = true,
+
+		Ability = { Kind = "HatchSpeed", Amount = 0.1 },
 	},
 
 	-- Frosty Peaks
@@ -210,6 +219,8 @@ local Pets: { [string]: Pet } = {
 		Accent = rgb(255, 90, 20),
 		Features = { "Crown" },
 		Neon = true,
+
+		Ability = { Kind = "HatchSpeed", Amount = 0.08 },
 	},
 	InfernoDragon = {
 		Name = "Inferno Dragon",
@@ -228,6 +239,8 @@ local Pets: { [string]: Pet } = {
 		Accent = rgb(255, 240, 120),
 		Features = { "Wings", "Halo" },
 		Neon = true,
+
+		Ability = { Kind = "GemBonus", Amount = 0.1 },
 	},
 
 	-- Cosmic Void
@@ -256,6 +269,8 @@ local Pets: { [string]: Pet } = {
 		Accent = rgb(120, 220, 255),
 		Features = { "Antenna" },
 		Neon = true,
+
+		Ability = { Kind = "GemBonus", Amount = 0.15 },
 	},
 	CometFox = {
 		Name = "Comet Fox",
