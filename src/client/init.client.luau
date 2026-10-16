@@ -94,6 +94,7 @@ local Input = require(Controllers.Input)
 local Hud = require(UI.Hud)
 Hud.build(screen, Input.tap, ShopWindow.open)
 Notifications.build(screen)
+require(UI.TutorialPrompt).build(screen)
 
 local HatchOverlay = require(UI.HatchOverlay)
 HatchOverlay.build()

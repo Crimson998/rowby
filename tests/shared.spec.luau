@@ -9,6 +9,7 @@ local Products = shared("Products")
 local Quests = shared("Quests")
 local RebirthPerks = shared("RebirthPerks")
 local Rewards = shared("Rewards")
+local Tutorial = shared("Tutorial")
 local Upgrades = shared("Upgrades")
 local Zones = shared("Zones")
 
@@ -880,6 +881,22 @@ test("chances, times and commas format nicely", function()
 	eq(Format.duration(190800), "2d 5h", "duration days")
 	eq(Format.commas(1234567), "1,234,567", "commas")
 	eq(Format.commas(123), "123", "short commas")
+end)
+
+test("tutorial advances through its steps and finishes", function()
+	local data = freshData()
+	local opened = {}
+	eq(Tutorial.current(data, opened), 1, "starts at tap")
+	data.Stats.Taps = Tutorial.TapsNeeded
+	eq(Tutorial.Steps[Tutorial.current(data, opened) :: number].Id, "Hatch", "then hatch")
+	data.Stats.EggsHatched = 1
+	eq(Tutorial.Steps[Tutorial.current(data, opened) :: number].Id, "Team", "then team")
+	opened.Pets = true
+	eq(Tutorial.Steps[Tutorial.current(data, opened) :: number].Id, "Clover", "then clover")
+	data.Stats.OrbsCollected = 1
+	eq(Tutorial.Steps[Tutorial.current(data, opened) :: number].Id, "Upgrades", "then upgrades")
+	opened.Upgrades = true
+	eq(Tutorial.current(data, opened), nil, "finished")
 end)
 
 print(string.format("%d passed, %d failed", passed, failed))

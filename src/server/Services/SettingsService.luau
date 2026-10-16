@@ -34,6 +34,9 @@ local VALIDATORS: { [string]: (any) -> boolean } = {
 	LowDetail = function(value)
 		return type(value) == "boolean"
 	end,
+	TutorialDone = function(value)
+		return type(value) == "boolean"
+	end,
 }
 
 local function setSetting(profile, key, value)

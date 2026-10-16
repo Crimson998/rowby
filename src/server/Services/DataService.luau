@@ -98,6 +98,8 @@ local TEMPLATE = {
 		ShowOtherPets = true,
 		-- Hides map decorations and pet sparkles for smoother play on low-end devices.
 		LowDetail = false,
+		-- Set once the first-session tutorial is finished or skipped.
+		TutorialDone = false,
 		-- Hatched pets of these rarities are deleted right away (new discoveries are always kept).
 		AutoDelete = { Common = false, Uncommon = false, Rare = false, Epic = false },
 	},
