@@ -97,6 +97,22 @@ local List: { Egg } = {
 			{ Id = "Rowby", Weight = 0.001 },
 		},
 	},
+	{
+		Id = "Crystal",
+		Name = "Crystal Egg",
+		Zone = 6,
+		Price = 180_000_000_000,
+		Color = rgb(110, 200, 240),
+		Accent = rgb(150, 255, 235),
+		Pets = {
+			{ Id = "PebblePup", Weight = 62 },
+			{ Id = "QuartzBat", Weight = 27 },
+			{ Id = "AmethystCat", Weight = 9 },
+			{ Id = "GeodeTurtle", Weight = 1.89 },
+			{ Id = "DiamondStag", Weight = 0.1 },
+			{ Id = "PrismDragon", Weight = 0.01 },
+		},
+	},
 }
 
 local ById: { [string]: Egg } = {}

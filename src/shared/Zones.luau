@@ -106,6 +106,22 @@ local List: { Zone } = {
 		AtmosphereDecay = rgb(70, 30, 140),
 		AtmosphereDensity = 0.35,
 	},
+	{
+		Index = 6,
+		Name = "Crystal Caverns",
+		Icon = "💎",
+		UnlockCost = 1_500_000_000_000,
+		TapMultiplier = 7,
+		CloverValue = 6,
+		Theme = "Crystal",
+		Ground = rgb(45, 55, 85),
+		GroundMaterial = Enum.Material.Slate,
+		Accent = rgb(120, 255, 235),
+		ClockTime = 21,
+		AtmosphereColor = rgb(120, 170, 230),
+		AtmosphereDecay = rgb(40, 70, 140),
+		AtmosphereDensity = 0.4,
+	},
 }
 
 -- World layout shared by the server builder and client (zone detection, guide beams).

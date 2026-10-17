@@ -382,6 +382,55 @@ DECOR.Cosmic = function(folder, rng, zoneIndex)
 	end
 end
 
+DECOR.Crystal = function(folder, rng, zoneIndex)
+	local gems = { rgb(120, 255, 235), rgb(170, 110, 255), rgb(120, 180, 255), rgb(255, 140, 220) }
+	for _ = 1, 24 do
+		local point = scatterPoint(rng, zoneIndex)
+		if point then
+			local color = gems[rng:NextInteger(1, #gems)]
+			for _ = 1, rng:NextInteger(2, 4) do
+				local height = rng:NextNumber(4, 11)
+				part({
+					Size = Vector3.new(1.8, height, 1.8),
+					CFrame = CFrame.new(point + Vector3.new(rng:NextNumber(-2, 2), height / 2 - 0.5, rng:NextNumber(-2, 2)))
+						* CFrame.Angles(
+							rng:NextNumber(-0.4, 0.4),
+							rng:NextNumber(0, math.pi),
+							rng:NextNumber(-0.4, 0.4)
+						),
+					Color = color,
+					Material = Enum.Material.Glass,
+					Transparency = 0.2,
+					Parent = folder,
+				})
+			end
+		end
+	end
+	for _ = 1, 10 do
+		local point = scatterPoint(rng, zoneIndex)
+		if point then
+			local size = rng:NextNumber(3, 7)
+			part({
+				Size = Vector3.new(size, size * 0.8, size),
+				CFrame = CFrame.new(point + Vector3.new(0, size * 0.3, 0)) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0),
+				Color = rgb(60, 70, 100),
+				Material = Enum.Material.Slate,
+				Parent = folder,
+			})
+		end
+	end
+	local zoneStart = (zoneIndex - 1) * LENGTH
+	for _ = 1, 40 do
+		ball(
+			rng:NextNumber(0.4, 0.9),
+			Vector3.new(rng:NextNumber(-110, 110), rng:NextNumber(20, 70), rng:NextNumber(zoneStart, zoneStart + LENGTH)),
+			gems[rng:NextInteger(1, #gems)],
+			folder,
+			{ Material = Enum.Material.Neon, CanCollide = false, CastShadow = false }
+		)
+	end
+end
+
 local function buildZone(zone)
 	local folder = Instance.new("Folder")
 	folder.Name = zone.Name

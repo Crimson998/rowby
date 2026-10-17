@@ -22,7 +22,7 @@ Effort: S = a day or less, M = a few days, L = a week or more.
 
 - **Trading** (L): two-player trade window, both confirm, short countdown, locked pets excluded, logged. Why: the biggest social feature in pet games.
 - **Server events** (M): a giant chest the whole server taps open together, rewards by contribution. Why: brings players to one spot and to each other.
-- **More areas** (M each): areas 6 to 8 with new eggs, pets and themes after Cosmic Void. Why: late-game players run out of goals.
+- **More areas** (M each): areas 7 and 8 with new eggs, pets and themes after Crystal Caverns. Why: late-game players run out of goals.
 
 ### Later
 
@@ -39,6 +39,7 @@ Noted to fix later; not features.
 
 ## Shipped
 
+- **Area 6, Crystal Caverns**: a sixth area (💎, unlock 1.5 trillion, 7x taps, 6 Luck XP per clover) with a Crystal Egg (180 billion) and six new pets (Pebble Pup to Prism Dragon, with HatchSpeed, CloverXP and GemBonus abilities), glass-crystal map decor (`DECOR.Crystal`), music/ambience slots and a badge slot (`Config.Badges.Areas[6]`). Areas 7 and 8 are still to add. The design doc needs the same change.
 - **First-session tutorial**: a banner (`TutorialPrompt`, steps in `Tutorial.luau`) walks new players through tapping 5 times, hatching, opening 🐾 Pets, grabbing a clover and opening Upgrades, with a Skip button; progress comes from profile stats and opened windows, and `Settings.TutorialDone` (validated in `SettingsService`) stops it for good. The design doc needs the same change; First-session tutorial is now shipped.
 - **Pet abilities (hatch speed, rebirth gems)**: two more `Ability` kinds. `HatchSpeed` (Bumblebee 5%, Ember Golem 8%, Candy Dragon 10%) shortens the egg hatch cooldown, capped at `Config.Pets.MaxHatchSpeed` (40%; `Formula.hatchCooldown`, used by `PetService` and auto-hatch); `GemBonus` (Donut Dog 5%, Phoenix 10%, Galaxy Axolotl 15%) adds to rebirth gems alongside Gem Finder (`Formula.nextRebirthGems`). Both stack per equipped copy via `Formula.abilityTotal` and show in the 🐾 Pets detail. Auto-collecting clovers is not done as a pet ability (the Auto Collect rebirth perk covers it). The design doc needs the same change; Pet abilities is now shipped.
 - **Pet abilities (clover XP)**: pets can carry an `Ability` (`Pets.luau`); Bunny, Eagle, Snow Owl, Frost Phoenix, Star Sprite and Void Kraken give +3% to +20% clover Luck XP while equipped, stacking per copy (`Formula.abilityCloverXP`, folded into `cloverXPMultiplier`) and shown in the 🐾 Pets detail. The design doc needs the same change.

@@ -280,6 +280,7 @@ Config.Music = {
 		Frost = "",
 		Lava = "",
 		Cosmic = "",
+		Crystal = "",
 	},
 }
 
@@ -297,6 +298,7 @@ Config.Ambience = {
 		Frost = "",
 		Lava = "",
 		Cosmic = "",
+		Crystal = "",
 	},
 }
 
@@ -319,7 +321,7 @@ Config.Badges = {
 	FirstRebirth = 0,
 	SecretPet = 0,
 	FullIndex = 0,
-	Areas = { [2] = 0, [3] = 0, [4] = 0, [5] = 0 },
+	Areas = { [2] = 0, [3] = 0, [4] = 0, [5] = 0, [6] = 0 },
 }
 
 return Config

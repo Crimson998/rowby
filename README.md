@@ -228,7 +228,7 @@ Music is off until you give it a track:
    number works too).
 
 That track then loops everywhere. To give an area its own track, fill in its entry under
-`Config.Music.Areas` (Meadow, Candy, Frost, Lava, Cosmic); walking between areas crossfades.
+`Config.Music.Areas` (Meadow, Candy, Frost, Lava, Cosmic, Crystal); walking between areas crossfades.
 Players can turn music off in ⚙️ Settings. Volume and fade time are in `Config.Music` too.
 
 **Ambience:** `Config.Ambience` works the same way (a `Default` plus per-area `Areas`) for a quiet looping layer
